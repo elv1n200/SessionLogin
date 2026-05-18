@@ -40,10 +40,13 @@ public class AccountManagerScreen extends Screen {
 	private static Sort sort = Sort.RECENT;
 	private static String query = "";
 
-	private Text status = surroundWithObfuscated(
-			Text.literal("Account Manager").formatted(Formatting.AQUA), 5);
+	private Text status = Text.empty();
 	private TextFieldWidget searchField;
 	private int page = 0;
+
+	private int titleY;
+	private int statusY;
+	private int emptyY;
 
 	public AccountManagerScreen() {
 		super(Text.literal(""));
@@ -54,20 +57,40 @@ public class AccountManagerScreen extends Screen {
 		int cx = this.width / 2;
 
 		if (SessionLogin.accountStore.isLocked()) {
+			int ly = (this.height - 45) / 2;
+			this.titleY = ly - 30;
+			this.statusY = -100;
+			this.emptyY = -100;
 			this.addDrawableChild(ButtonWidget.builder(
 					Text.literal("Unlock Vault"), b -> {
 						assert this.client != null;
 						this.client.setScreen(new UnlockScreen());
-					}).dimensions(cx - 100, this.height / 2, 200, 20).build());
+					}).dimensions(cx - 100, ly, 200, 20).build());
 			this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
 				assert this.client != null;
 				this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
-			}).dimensions(cx - 100, this.height / 2 + 25, 200, 20).build());
+			}).dimensions(cx - 100, ly + 25, 200, 20).build());
 			return;
 		}
 
+		List<Account> all = filteredSorted();
+		startValidation(all);
+
+		int maxPage = Math.max(0, (all.size() - 1) / PER_PAGE);
+		page = Math.min(page, maxPage);
+		int start = page * PER_PAGE;
+		int end = Math.min(all.size(), start + PER_PAGE);
+		int visibleRows = Math.max(1, end - start);
+
+		int contentH = 12 + 16 + 24 + visibleRows * 24 + 6 + 20 + 4 + 20 + 4 + 20;
+		int top = Math.max(28, (this.height - contentH) / 2);
+
+		this.titleY = top;
+		this.statusY = top + 12;
+
+		int searchY = top + 28;
 		searchField = new TextFieldWidget(this.textRenderer,
-				cx - 130, 38, 180, 18, Text.literal("Search"));
+				cx - 130, searchY + 1, 180, 18, Text.literal("Search"));
 		searchField.setMaxLength(48);
 		searchField.setText(query);
 		searchField.setChangedListener(s -> {
@@ -81,20 +104,14 @@ public class AccountManagerScreen extends Screen {
 				Text.literal("Sort: " + sort.name()), b -> {
 					sort = Sort.values()[(sort.ordinal() + 1) % Sort.values().length];
 					this.clearAndInit();
-				}).dimensions(cx + 55, 37, 75, 20).build());
+				}).dimensions(cx + 55, searchY, 75, 20).build());
 
-		List<Account> all = filteredSorted();
-		startValidation(all);
-
-		int maxPage = Math.max(0, (all.size() - 1) / PER_PAGE);
-		page = Math.min(page, maxPage);
-		int start = page * PER_PAGE;
-		int end = Math.min(all.size(), start + PER_PAGE);
-		int top = 64;
+		int rowStart = top + 52;
+		this.emptyY = rowStart + 6;
 
 		for (int i = start; i < end; i++) {
 			final Account acc = all.get(i);
-			int rowY = top + (i - start) * 24;
+			int rowY = rowStart + (i - start) * 24;
 
 			this.addDrawableChild(ButtonWidget.builder(rowLabel(acc),
 					b -> switchTo(acc)
@@ -114,7 +131,7 @@ public class AccountManagerScreen extends Screen {
 					}).dimensions(cx + 92, rowY, 38, 20).build());
 		}
 
-		int navY = top + PER_PAGE * 24 + 6;
+		int navY = rowStart + visibleRows * 24 + 6;
 
 		ButtonWidget prev = ButtonWidget.builder(Text.literal("< Prev"), b -> {
 			page--;
@@ -276,15 +293,20 @@ public class AccountManagerScreen extends Screen {
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		super.render(context, mouseX, mouseY, delta);
+		context.drawCenteredTextWithShadow(this.textRenderer,
+				surroundWithObfuscated(Text.literal("Account Manager")
+						.formatted(Formatting.AQUA), 4),
+				this.width / 2, this.titleY, 0xFFFFFF);
 		context.drawCenteredTextWithShadow(this.textRenderer, this.status,
-				this.width / 2, 18, 0xFFFFFF);
+				this.width / 2, this.statusY, 0xFFFFFF);
 		if (!SessionLogin.accountStore.isLocked()) {
 			searchField.render(context, mouseX, mouseY, delta);
-			if (SessionLogin.accountStore.accounts().isEmpty()) {
+			if (filteredSorted().isEmpty()) {
 				context.drawCenteredTextWithShadow(this.textRenderer,
-						Text.literal("No saved accounts yet")
+						Text.literal(query.isEmpty()
+								? "No saved accounts yet" : "No matches")
 								.formatted(Formatting.GRAY),
-						this.width / 2, 70, 0xFFFFFF);
+						this.width / 2, this.emptyY, 0xFFFFFF);
 			}
 		}
 	}
