@@ -16,6 +16,9 @@
 	"entrypoints": {
 		"main": [
 			"dev.elv1n200.sessionlogin.SessionLogin"
+		],
+		"client": [
+			"dev.elv1n200.sessionlogin.SessionLoginClient"
 		]
 	},
 	"mixins": [

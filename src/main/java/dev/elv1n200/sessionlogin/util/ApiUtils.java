@@ -67,6 +67,16 @@ public final class ApiUtils {
 		}
 	}
 
+	/** True if the token still resolves to a Minecraft profile. */
+	public static boolean tokenLooksValid(String token) {
+		try {
+			getProfileInfo(token);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 	public static int changeSkin(String url, String token) {
 		try (CloseableHttpClient client = HttpClients.createDefault()) {
 			HttpPost request = new HttpPost(SKINS_URL);

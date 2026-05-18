@@ -2,6 +2,7 @@ package dev.elv1n200.sessionlogin;
 
 import dev.elv1n200.sessionlogin.account.AccountStore;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
+import dev.elv1n200.sessionlogin.vault.VaultManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -9,6 +10,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
 
 public class SessionLogin implements ModInitializer {
 	public static final String MOD_ID = "sessionlogin";
@@ -26,14 +29,20 @@ public class SessionLogin implements ModInitializer {
 	/** Persistent, token-only account list. */
 	public static AccountStore accountStore;
 
+	/** Encryption mode owner for the account store. */
+	public static VaultManager vault;
+
 	@Override
 	public void onInitialize() {
 		originalSession = SessionUtils.getSession();
 		currentSession = originalSession;
 		overrideSession = true;
 
-		accountStore = new AccountStore(
-				FabricLoader.getInstance().getConfigDir().resolve(MOD_ID));
+		Path configDir =
+				FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
+		vault = new VaultManager(configDir);
+		vault.init();
+		accountStore = new AccountStore(configDir, vault);
 		accountStore.load();
 
 		String modVersion = FabricLoader.getInstance()

@@ -4,6 +4,7 @@ import dev.elv1n200.sessionlogin.SessionLogin;
 import dev.elv1n200.sessionlogin.account.Account;
 import dev.elv1n200.sessionlogin.util.ApiUtils;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
+import dev.elv1n200.sessionlogin.util.TokenUtils;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
@@ -20,6 +21,7 @@ public class LoginScreen extends Screen {
 	private ButtonWidget restoreButton;
 	private ButtonWidget saveButton;
 	private Text currentTitle;
+	private Text expiryText = Text.empty();
 
 	private String[] lastInfo;
 	private String lastToken;
@@ -42,7 +44,7 @@ public class LoginScreen extends Screen {
 		this.addSelectableChild(sessionField);
 
 		ButtonWidget loginButton = ButtonWidget.builder(Text.literal("Login"), b -> {
-			String input = sessionField.getText().trim();
+			String input = TokenUtils.clean(sessionField.getText());
 			if (input.isEmpty()) {
 				currentTitle = surroundWithObfuscated(
 						Text.literal("Session ID cannot be empty")
@@ -57,24 +59,34 @@ public class LoginScreen extends Screen {
 				currentTitle = surroundWithObfuscated(
 						Text.literal("Logged in as: " + lastInfo[0])
 								.formatted(Formatting.GREEN), 5);
+				updateExpiry(input);
 				restoreButton.active = true;
 				saveButton.active = true;
 			} catch (Exception e) {
 				lastInfo = null;
+				expiryText = Text.empty();
 				currentTitle = surroundWithObfuscated(
 						Text.literal("Invalid Session ID")
 								.formatted(Formatting.RED), 7);
 			}
-		}).dimensions(cx - 100, cy + 25, 97, 20).build();
+		}).dimensions(cx - 100, cy + 25, 64, 20).build();
 		this.addDrawableChild(loginButton);
+
+		this.addDrawableChild(ButtonWidget.builder(
+				Text.literal("Paste"), b -> {
+					assert this.client != null;
+					String clip = this.client.keyboard.getClipboard();
+					sessionField.setText(TokenUtils.clean(clip));
+				}).dimensions(cx - 33, cy + 25, 64, 20).build());
 
 		restoreButton = ButtonWidget.builder(Text.literal("Restore"), b -> {
 			SessionUtils.restoreSession();
+			expiryText = Text.empty();
 			currentTitle = surroundWithObfuscated(
 					Text.literal("Restored original session")
 							.formatted(Formatting.GREEN), 7);
 			restoreButton.active = false;
-		}).dimensions(cx + 3, cy + 25, 97, 20).build();
+		}).dimensions(cx + 34, cy + 25, 66, 20).build();
 		this.addDrawableChild(restoreButton);
 
 		saveButton = ButtonWidget.builder(Text.literal("Save to accounts"), b -> {
@@ -83,9 +95,10 @@ public class LoginScreen extends Screen {
 						Text.literal("Log in first").formatted(Formatting.RED), 5);
 				return;
 			}
-			SessionLogin.accountStore.add(new Account(
-					lastInfo[0], lastInfo[0],
-					SessionUtils.dashUuid(lastInfo[1]), lastToken));
+			Account acc = new Account(lastInfo[0], lastInfo[0],
+					SessionUtils.dashUuid(lastInfo[1]), lastToken);
+			acc.touch();
+			SessionLogin.accountStore.add(acc);
 			currentTitle = surroundWithObfuscated(
 					Text.literal("Saved " + lastInfo[0])
 							.formatted(Formatting.GREEN), 4);
@@ -108,12 +121,26 @@ public class LoginScreen extends Screen {
 		saveButton.active = false;
 	}
 
+	private void updateExpiry(String token) {
+		String label = TokenUtils.expiryLabel(token);
+		Formatting color = switch (label) {
+			case "expired" -> Formatting.RED;
+			case "unknown" -> Formatting.GRAY;
+			default -> TokenUtils.expiryEpochSeconds(token)
+					- System.currentTimeMillis() / 1000L < 3600
+					? Formatting.YELLOW : Formatting.GREEN;
+		};
+		expiryText = Text.literal("Token expires: " + label).formatted(color);
+	}
+
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		super.render(context, mouseX, mouseY, delta);
 		sessionField.render(context, mouseX, mouseY, delta);
 		context.drawCenteredTextWithShadow(this.textRenderer, this.currentTitle,
 				this.width / 2, this.height / 2 - 30, 0xFFFFFF);
+		context.drawCenteredTextWithShadow(this.textRenderer, this.expiryText,
+				this.width / 2, this.height / 2 - 16, 0xFFFFFF);
 	}
 
 	@Override
