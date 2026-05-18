@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "dev.elv1n200.sessionlogin.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"MultiplayerScreenMixin",
+		"MinecraftClientMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

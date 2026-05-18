@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "sessionlogin",
+	"version": "${version}",
+	"name": "Session Login",
+	"description": "Token-based Minecraft session switcher with a saved multi-account manager. No email/password auth, no telemetry; tokens are used only against official Mojang APIs.",
+	"authors": [
+		"elv1n200"
+	],
+	"contact": {
+		"homepage": "None",
+		"sources": "https://github.com/elv1n200/SessionLogin"
+	},
+	"license": "CC0-1.0",
+	"environment": "client",
+	"entrypoints": {
+		"main": [
+			"dev.elv1n200.sessionlogin.SessionLogin"
+		]
+	},
+	"mixins": [
+		"sessionlogin.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.10",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
