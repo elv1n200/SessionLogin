@@ -130,10 +130,10 @@ public class LoginScreen extends Screen {
 					busy = false;
 					loginButton.active = true;
 				});
-			} catch (Exception e) {
+			} catch (Throwable t) {
 				MinecraftClient.getInstance().execute(() -> {
 					lastInfo = null;
-					status = Text.literal("✘ " + reason(e))
+					status = Text.literal("✘ " + reason(t))
 							.formatted(Formatting.RED);
 					busy = false;
 					loginButton.active = true;
@@ -142,7 +142,7 @@ public class LoginScreen extends Screen {
 		}, "SessionLoginThread").start();
 	}
 
-	private static String reason(Exception e) {
+	private static String reason(Throwable e) {
 		String m = e.getMessage();
 		if (m != null && m.toLowerCase().contains("401")) {
 			return "Token invalid or expired";
