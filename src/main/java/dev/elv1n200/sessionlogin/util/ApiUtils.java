@@ -38,8 +38,12 @@ public final class ApiUtils {
 			HttpGet request = new HttpGet(PROFILE_URL);
 			request.setHeader("Authorization", "Bearer " + token);
 			try (CloseableHttpResponse response = client.execute(request)) {
+				int code = response.getStatusLine().getStatusCode();
 				String body = EntityUtils.toString(
 						response.getEntity(), StandardCharsets.UTF_8);
+				if (code != 200) {
+					throw new IOException("Mojang API HTTP " + code);
+				}
 				JsonObject json = JsonParser.parseString(body).getAsJsonObject();
 				if (!json.has("name") || !json.has("id")) {
 					throw new IOException("Token rejected by Mojang API");

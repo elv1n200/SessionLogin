@@ -6,7 +6,6 @@ import dev.elv1n200.sessionlogin.screen.LoginScreen;
 import dev.elv1n200.sessionlogin.util.ApiUtils;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -22,10 +21,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MultiplayerScreenMixin extends Screen {
 
 	@Unique
-	private static Boolean sessionlogin$valid = null;
+	private static volatile Boolean sessionlogin$valid = null;
 
 	@Unique
-	private static boolean sessionlogin$started = false;
+	private static volatile String sessionlogin$validatedToken = null;
 
 	protected MultiplayerScreenMixin(Text title) {
 		super(title);
@@ -33,9 +32,6 @@ public abstract class MultiplayerScreenMixin extends Screen {
 
 	@Inject(method = "init", at = @At("TAIL"))
 	private void sessionlogin$onInit(CallbackInfo ci) {
-		sessionlogin$valid = null;
-		sessionlogin$started = false;
-
 		int y = 5;
 		int w = 80;
 		int h = 20;
@@ -51,34 +47,55 @@ public abstract class MultiplayerScreenMixin extends Screen {
 		this.addDrawableChild(ButtonWidget.builder(Text.literal("Edit"),
 				b -> MinecraftClient.getInstance().setScreen(new EditAccountScreen())
 		).dimensions(this.width - 270, y, w, h).build());
+
+		// Persistent logged-in indicator, drawn every frame. Uses addDrawable
+		// (reliable) instead of injecting render(), which doesn't remap here.
+		this.addDrawable((context, mouseX, mouseY, delta) -> {
+			String token = MinecraftClient.getInstance()
+					.getSession().getAccessToken();
+			sessionlogin$revalidateIfNeeded(token);
+
+			Text statusPart;
+			if (!token.equals(sessionlogin$validatedToken)
+					|| sessionlogin$valid == null) {
+				statusPart = Text.literal("[checking...]").formatted(Formatting.GRAY);
+			} else if (sessionlogin$valid) {
+				statusPart = Text.literal("[✔ valid]").formatted(Formatting.GREEN);
+			} else {
+				statusPart = Text.literal("[✘ invalid]").formatted(Formatting.RED);
+			}
+
+			boolean swapped = !SessionUtils.isOriginalActive();
+			Text display = Text.literal(swapped ? "Logged in: " : "Account: ")
+					.formatted(swapped ? Formatting.GOLD : Formatting.GRAY)
+					.append(Text.literal(SessionUtils.getUsername())
+							.formatted(Formatting.WHITE))
+					.append(Text.literal(" "))
+					.append(statusPart);
+
+			context.drawTextWithShadow(this.textRenderer, display, 5, 6, 0xFFFFFF);
+		});
 	}
 
-	@Inject(method = "render", at = @At("TAIL"), require = 0)
-	private void sessionlogin$onRender(DrawContext context, int mouseX,
-									   int mouseY, float delta, CallbackInfo ci) {
-		String username = SessionUtils.getUsername();
-
-		if (sessionlogin$valid == null && !sessionlogin$started) {
-			sessionlogin$started = true;
-			new Thread(() -> sessionlogin$valid = ApiUtils.validateSession(
-					MinecraftClient.getInstance().getSession().getAccessToken()),
-					"SessionValidationThread").start();
+	@Unique
+	private static void sessionlogin$revalidateIfNeeded(String token) {
+		if (token.equals(sessionlogin$validatedToken)
+				&& sessionlogin$valid != null) {
+			return;
 		}
-
-		Text status;
-		if (sessionlogin$valid == null) {
-			status = Text.literal("[... Validating]").formatted(Formatting.GRAY);
-		} else if (sessionlogin$valid) {
-			status = Text.literal("[OK] Valid").formatted(Formatting.GREEN);
-		} else {
-			status = Text.literal("[X] Invalid").formatted(Formatting.RED);
+		// kick off one validation per distinct token
+		synchronized (MultiplayerScreenMixin.class) {
+			if (token.equals(sessionlogin$validatedToken)) {
+				return;
+			}
+			sessionlogin$validatedToken = token;
+			sessionlogin$valid = null;
+			new Thread(() -> {
+				boolean v = ApiUtils.tokenLooksValid(token);
+				if (token.equals(sessionlogin$validatedToken)) {
+					sessionlogin$valid = v;
+				}
+			}, "SessionValidationThread").start();
 		}
-
-		Text display = Text.literal("User: ")
-				.append(Text.literal(username).formatted(Formatting.WHITE))
-				.append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))
-				.append(status);
-
-		context.drawText(this.textRenderer, display, 5, 10, 0xFFFFFF, false);
 	}
 }
