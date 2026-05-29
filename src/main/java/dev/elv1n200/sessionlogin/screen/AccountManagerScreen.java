@@ -82,7 +82,7 @@ public class AccountManagerScreen extends Screen {
 		int end = Math.min(all.size(), start + PER_PAGE);
 		int visibleRows = Math.max(1, end - start);
 
-		int contentH = 12 + 16 + 24 + visibleRows * 24 + 6 + 20 + 4 + 20 + 4 + 20;
+		int contentH = 12 + 16 + 24 + visibleRows * 24 + 6 + 20 + (4 + 20) * 4;
 		int top = Math.max(28, (this.height - contentH) / 2);
 
 		this.titleY = top;
@@ -197,10 +197,34 @@ public class AccountManagerScreen extends Screen {
 					this.client.setScreen(new SetPasswordScreen());
 				}).dimensions(cx - 43, navY + 48, 85, 20).build());
 
+		this.addDrawableChild(ButtonWidget.builder(
+				Text.literal("Settings"), b -> {
+					assert this.client != null;
+					this.client.setScreen(new SettingsScreen(this));
+				}).dimensions(cx + 44, navY + 48, 86, 20).build());
+
+		this.addDrawableChild(ButtonWidget.builder(
+				Text.literal("Add Offline"), b -> {
+					assert this.client != null;
+					this.client.setScreen(new AddOfflineAccountScreen());
+				}).dimensions(cx - 130, navY + 72, 85, 20).build());
+
+		this.addDrawableChild(ButtonWidget.builder(
+				Text.literal("Import"), b -> {
+					assert this.client != null;
+					this.client.setScreen(new ImportExportScreen(true));
+				}).dimensions(cx - 43, navY + 72, 85, 20).build());
+
+		this.addDrawableChild(ButtonWidget.builder(
+				Text.literal("Export"), b -> {
+					assert this.client != null;
+					this.client.setScreen(new ImportExportScreen(false));
+				}).dimensions(cx + 44, navY + 72, 86, 20).build());
+
 		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
 			assert this.client != null;
 			this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
-		}).dimensions(cx + 44, navY + 48, 86, 20).build());
+		}).dimensions(cx - 100, navY + 96, 200, 20).build());
 	}
 
 	private List<Account> filteredSorted() {
@@ -226,6 +250,10 @@ public class AccountManagerScreen extends Screen {
 	}
 
 	private Text rowLabel(Account acc) {
+		if (acc.isOffline()) {
+			return Text.literal(acc.label() + "  ")
+					.append(Text.literal("[offline]").formatted(Formatting.DARK_GRAY));
+		}
 		String exp = acc.hasToken() ? TokenUtils.expiryLabel(acc.token())
 				: "locked";
 		Boolean valid = acc.hasToken() ? VALIDITY.get(acc.token()) : null;
@@ -241,7 +269,7 @@ public class AccountManagerScreen extends Screen {
 
 	private void startValidation(List<Account> list) {
 		for (Account a : list) {
-			if (!a.hasToken()) {
+			if (!a.hasToken() || a.isOffline()) {
 				continue;
 			}
 			String t = a.token();
@@ -260,6 +288,15 @@ public class AccountManagerScreen extends Screen {
 
 	private void switchTo(Account acc) {
 		try {
+			if (acc.isOffline()) {
+				SessionUtils.setSession(SessionUtils.createSession(
+						acc.username(), acc.uuid(), ""));
+				acc.touch();
+				SessionLogin.accountStore.save();
+				status = ok("Switched to " + acc.username() + " (offline)");
+				dev.elv1n200.sessionlogin.util.Notifier.loggedIn(acc.username());
+				return;
+			}
 			if (!acc.hasToken()) {
 				status = bad("Vault locked");
 				return;
@@ -275,6 +312,7 @@ public class AccountManagerScreen extends Screen {
 			} else {
 				status = ok("Switched to " + acc.username());
 			}
+			dev.elv1n200.sessionlogin.util.Notifier.loggedIn(acc.username());
 		} catch (Exception e) {
 			status = bad("Failed to switch account");
 		}

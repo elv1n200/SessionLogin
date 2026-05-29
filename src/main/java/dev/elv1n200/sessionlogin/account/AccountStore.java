@@ -66,12 +66,20 @@ public final class AccountStore {
 			}
 			for (var el : arr) {
 				JsonObject o = el.getAsJsonObject();
+				Account.Type type = Account.Type.SESSION;
+				if (o.has("type")) {
+					try {
+						type = Account.Type.valueOf(
+								o.get("type").getAsString().toUpperCase());
+					} catch (Exception ignored) {
+					}
+				}
 				Account a = new Account(
 						o.get("label").getAsString(),
 						o.get("username").getAsString(),
 						o.get("uuid").getAsString(),
-						"");
-				a.setEncToken(o.get("token").getAsString());
+						"", type);
+				a.setEncToken(o.has("token") ? o.get("token").getAsString() : "");
 				if (o.has("notes")) {
 					a.setNotes(o.get("notes").getAsString());
 				}
@@ -138,6 +146,7 @@ public final class AccountStore {
 				o.addProperty("token", enc);
 				o.addProperty("notes", a.notes());
 				o.addProperty("lastUsed", a.lastUsed());
+				o.addProperty("type", a.type().name());
 				arr.add(o);
 			}
 			JsonObject root = new JsonObject();

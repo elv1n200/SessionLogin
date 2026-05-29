@@ -129,6 +129,7 @@ public class LoginScreen extends Screen {
 					saveButton.active = true;
 					busy = false;
 					loginButton.active = true;
+					dev.elv1n200.sessionlogin.util.Notifier.loggedIn(info[0]);
 				});
 			} catch (Throwable t) {
 				MinecraftClient.getInstance().execute(() -> {

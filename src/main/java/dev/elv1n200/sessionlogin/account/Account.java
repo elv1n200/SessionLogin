@@ -9,6 +9,9 @@ package dev.elv1n200.sessionlogin.account;
  * so a locked store can still be re-saved without data loss.
  */
 public final class Account {
+
+	public enum Type {SESSION, OFFLINE}
+
 	private String label;
 	private final String username;
 	private final String uuid;
@@ -16,8 +19,13 @@ public final class Account {
 	private String notes;
 	private long lastUsed;
 	private String encToken;
+	private Type type;
 
 	public Account(String label, String username, String uuid, String token) {
+		this(label, username, uuid, token, Type.SESSION);
+	}
+
+	public Account(String label, String username, String uuid, String token, Type type) {
 		this.label = label;
 		this.username = username;
 		this.uuid = uuid;
@@ -25,6 +33,24 @@ public final class Account {
 		this.notes = "";
 		this.lastUsed = 0L;
 		this.encToken = "";
+		this.type = type;
+	}
+
+	public Type type() {
+		return type;
+	}
+
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	public boolean isOffline() {
+		return type == Type.OFFLINE;
+	}
+
+	public static java.util.UUID offlineUuid(String username) {
+		return java.util.UUID.nameUUIDFromBytes(
+				("OfflinePlayer:" + username).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 	}
 
 	public String label() {

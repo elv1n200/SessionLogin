@@ -1,5 +1,6 @@
 package dev.elv1n200.sessionlogin;
 
+import dev.elv1n200.sessionlogin.command.SessionLoginCommand;
 import dev.elv1n200.sessionlogin.screen.AccountManagerScreen;
 import dev.elv1n200.sessionlogin.screen.UnlockScreen;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
@@ -20,6 +21,8 @@ public class SessionLoginClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		SessionLoginCommand.register();
+
 		openManagerKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.sessionlogin.manager",
 				InputUtil.Type.KEYSYM,

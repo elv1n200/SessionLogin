@@ -4,7 +4,10 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"MultiplayerScreenMixin",
-		"MinecraftClientMixin"
+		"MinecraftClientMixin",
+		"DownloaderMixin",
+		"ClientBrandRetrieverMixin",
+		"TelemetryManagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

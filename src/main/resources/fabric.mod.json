@@ -19,6 +19,9 @@
 		],
 		"client": [
 			"dev.elv1n200.sessionlogin.SessionLoginClient"
+		],
+		"modmenu": [
+			"dev.elv1n200.sessionlogin.modmenu.ModMenuIntegration"
 		]
 	},
 	"mixins": [

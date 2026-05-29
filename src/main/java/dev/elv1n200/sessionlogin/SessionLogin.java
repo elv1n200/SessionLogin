@@ -1,6 +1,7 @@
 package dev.elv1n200.sessionlogin;
 
 import dev.elv1n200.sessionlogin.account.AccountStore;
+import dev.elv1n200.sessionlogin.config.Settings;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import dev.elv1n200.sessionlogin.vault.VaultManager;
 import net.fabricmc.api.ModInitializer;
@@ -32,6 +33,9 @@ public class SessionLogin implements ModInitializer {
 	/** Encryption mode owner for the account store. */
 	public static VaultManager vault;
 
+	/** Privacy/QoL toggles persisted in config. */
+	public static Settings settings;
+
 	@Override
 	public void onInitialize() {
 		originalSession = SessionUtils.getSession();
@@ -40,6 +44,8 @@ public class SessionLogin implements ModInitializer {
 
 		Path configDir =
 				FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
+		settings = new Settings(configDir);
+		settings.load();
 		vault = new VaultManager(configDir);
 		vault.init();
 		accountStore = new AccountStore(configDir, vault);
