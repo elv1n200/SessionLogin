@@ -39,10 +39,37 @@ public class BulkImportScreen extends Screen {
 				Text.literal("Import from clipboard"), b -> startImport()
 		).dimensions(cx - 100, cy, 200, 20).build());
 
+		this.addDrawableChild(ButtonWidget.builder(
+				Text.literal("Import from MC Launcher"), b -> startLauncherImport()
+		).dimensions(cx - 100, cy + 25, 200, 20).build());
+
 		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
 			assert this.client != null;
 			this.client.setScreen(new AccountManagerScreen());
-		}).dimensions(cx - 100, cy + 25, 200, 20).build());
+		}).dimensions(cx - 100, cy + 50, 200, 20).build());
+	}
+
+	private void startLauncherImport() {
+		if (running) {
+			return;
+		}
+		java.nio.file.Path file =
+				dev.elv1n200.sessionlogin.util.LauncherImport.findFile();
+		if (file == null) {
+			status = "No launcher_accounts.json found in the usual places.";
+			return;
+		}
+		java.util.List<dev.elv1n200.sessionlogin.account.Account> accs =
+				dev.elv1n200.sessionlogin.util.LauncherImport.read(file);
+		if (accs.isEmpty()) {
+			status = "Launcher file at " + file + " had no usable accounts.";
+			return;
+		}
+		for (dev.elv1n200.sessionlogin.account.Account a : accs) {
+			SessionLogin.accountStore.add(a);
+		}
+		status = "Imported " + accs.size() + " account(s) from "
+				+ file.getFileName() + ".";
 	}
 
 	private void startImport() {

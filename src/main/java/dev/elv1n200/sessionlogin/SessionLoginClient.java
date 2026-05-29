@@ -2,7 +2,9 @@ package dev.elv1n200.sessionlogin;
 
 import dev.elv1n200.sessionlogin.command.SessionLoginCommand;
 import dev.elv1n200.sessionlogin.screen.AccountManagerScreen;
+import dev.elv1n200.sessionlogin.screen.TamperWarningScreen;
 import dev.elv1n200.sessionlogin.screen.UnlockScreen;
+import dev.elv1n200.sessionlogin.util.IntegrityCheck;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -29,12 +31,23 @@ public class SessionLoginClient implements ClientModInitializer {
 				GLFW.GLFW_KEY_UNKNOWN,
 				KeyBinding.Category.MISC));
 
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			while (openManagerKey.wasPressed()) {
-				if (SessionLogin.accountStore.isLocked()) {
-					client.setScreen(new UnlockScreen());
-				} else {
-					client.setScreen(new AccountManagerScreen());
+		ClientTickEvents.END_CLIENT_TICK.register(new ClientTickEvents.EndTick() {
+			private boolean tamperShown = false;
+
+			@Override
+			public void onEndTick(MinecraftClient client) {
+				while (openManagerKey.wasPressed()) {
+					if (SessionLogin.accountStore.isLocked()) {
+						client.setScreen(new UnlockScreen());
+					} else {
+						client.setScreen(new AccountManagerScreen());
+					}
+				}
+				if (!tamperShown
+						&& IntegrityCheck.status() == IntegrityCheck.Status.MISMATCH
+						&& client.currentScreen instanceof net.minecraft.client.gui.screen.TitleScreen) {
+					tamperShown = true;
+					client.setScreen(new TamperWarningScreen());
 				}
 			}
 		});

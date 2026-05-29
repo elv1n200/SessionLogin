@@ -2,6 +2,7 @@ package dev.elv1n200.sessionlogin;
 
 import dev.elv1n200.sessionlogin.account.AccountStore;
 import dev.elv1n200.sessionlogin.config.Settings;
+import dev.elv1n200.sessionlogin.util.IntegrityCheck;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import dev.elv1n200.sessionlogin.vault.VaultManager;
 import net.fabricmc.api.ModInitializer;
@@ -44,6 +45,7 @@ public class SessionLogin implements ModInitializer {
 
 		Path configDir =
 				FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
+		IntegrityCheck.run(configDir);
 		settings = new Settings(configDir);
 		settings.load();
 		vault = new VaultManager(configDir);

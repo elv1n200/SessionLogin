@@ -47,6 +47,8 @@ public class AccountManagerScreen extends Screen {
 	private int titleY;
 	private int statusY;
 	private int emptyY;
+	private int rowStart;
+	private List<Account> visibleAccounts = java.util.Collections.emptyList();
 
 	public AccountManagerScreen() {
 		super(Text.literal(""));
@@ -106,12 +108,13 @@ public class AccountManagerScreen extends Screen {
 					this.clearAndInit();
 				}).dimensions(cx + 55, searchY, 75, 20).build());
 
-		int rowStart = top + 52;
-		this.emptyY = rowStart + 6;
+		this.rowStart = top + 52;
+		this.emptyY = this.rowStart + 6;
+		this.visibleAccounts = all.subList(start, end);
 
 		for (int i = start; i < end; i++) {
 			final Account acc = all.get(i);
-			int rowY = rowStart + (i - start) * 24;
+			int rowY = this.rowStart + (i - start) * 24;
 
 			this.addDrawableChild(ButtonWidget.builder(rowLabel(acc),
 					b -> switchTo(acc)
@@ -250,8 +253,10 @@ public class AccountManagerScreen extends Screen {
 	}
 
 	private Text rowLabel(Account acc) {
+		// Leading spaces reserve room for the 16x16 head overlay drawn in render().
+		String pad = "    ";
 		if (acc.isOffline()) {
-			return Text.literal(acc.label() + "  ")
+			return Text.literal(pad + acc.label() + "  ")
 					.append(Text.literal("[offline]").formatted(Formatting.DARK_GRAY));
 		}
 		String exp = acc.hasToken() ? TokenUtils.expiryLabel(acc.token())
@@ -260,7 +265,7 @@ public class AccountManagerScreen extends Screen {
 		String mark = valid == null ? "?" : (valid ? "OK" : "X");
 		Formatting c = valid == null ? Formatting.GRAY
 				: (valid ? Formatting.GREEN : Formatting.RED);
-		return Text.literal(acc.label() + "  ")
+		return Text.literal(pad + acc.label() + "  ")
 				.append(Text.literal("[" + exp + "]")
 						.formatted(TokenUtils.isExpired(acc.token())
 								? Formatting.RED : Formatting.DARK_GRAY))
@@ -318,6 +323,28 @@ public class AccountManagerScreen extends Screen {
 		}
 	}
 
+	private void drawHeads(DrawContext context) {
+		if (visibleAccounts.isEmpty()) {
+			return;
+		}
+		int cx = this.width / 2;
+		int x = cx - 128;
+		for (int i = 0; i < visibleAccounts.size(); i++) {
+			Account a = visibleAccounts.get(i);
+			int y = rowStart + i * 24 + 2;
+			net.minecraft.util.Identifier head =
+					dev.elv1n200.sessionlogin.util.SkinCache.head(a.uuid());
+			if (head != null) {
+				context.drawTexture(
+						net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
+						head, x, y, 0f, 0f, 16, 16, 16, 16);
+			} else {
+				// Fallback square so the alignment is obvious before the head loads.
+				context.fill(x, y, x + 16, y + 16, 0x66202020);
+			}
+		}
+	}
+
 	private static Text ok(String m) {
 		return surroundWithObfuscated(
 				Text.literal(m).formatted(Formatting.GREEN), 4);
@@ -331,6 +358,7 @@ public class AccountManagerScreen extends Screen {
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		super.render(context, mouseX, mouseY, delta);
+		drawHeads(context);
 		context.drawCenteredTextWithShadow(this.textRenderer,
 				surroundWithObfuscated(Text.literal("Account Manager")
 						.formatted(Formatting.AQUA), 4),

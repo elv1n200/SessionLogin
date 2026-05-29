@@ -3,6 +3,26 @@
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] — 2026-05-29
+
+### Added
+- **Player-head preview** next to every row in the Account Manager,
+  fetched lazily from Crafatar and registered as a dynamic texture.
+  Fallback square is drawn until the image loads.
+- **Import from Minecraft Launcher** — reads
+  `launcher_accounts.json` from the standard per-OS locations and
+  imports every account as a session-token entry. Added to the Bulk
+  Import screen.
+- **JAR integrity check (trust-on-first-use)** — at startup the running
+  jar's SHA-256 is recorded to `config/sessionlogin/integrity.json`.
+  Subsequent launches compare; mismatches open a red
+  `TamperWarningScreen` on top of the title screen with options to
+  trust the new build or quit.
+- **GitHub Actions CI** — `.github/workflows/build.yml` builds every
+  push and pull request and uploads the jar as an artifact. Pushing a
+  `v*` tag also creates a GitHub release with the jar attached
+  automatically.
+
 ## [1.2.0] — 2026-05-29
 
 ### Added — privacy
@@ -91,6 +111,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   manager, name / skin editing via the official Mojang API, and
   AES-GCM-at-rest encryption with a local key.
 
+[1.3.0]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.0
 [1.2.0]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.2.0
 [1.1.2]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.1.2
 [1.1.1]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.1.1
