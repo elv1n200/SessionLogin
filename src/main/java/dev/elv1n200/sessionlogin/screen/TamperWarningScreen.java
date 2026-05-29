@@ -39,7 +39,12 @@ public class TamperWarningScreen extends Screen {
 
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		this.renderBackground(context, mouseX, mouseY, delta);
+		// super.render() draws the (blurred) background and the buttons.
+		// We must not call renderBackground() ourselves on top of that, or
+		// vanilla's "Can only blur once per frame" assertion fires and MC
+		// crashes when this screen sits behind any overlay (e.g. progress).
+		super.render(context, mouseX, mouseY, delta);
+
 		int cx = this.width / 2;
 		int cy = this.height / 2;
 
@@ -69,8 +74,6 @@ public class TamperWarningScreen extends Screen {
 				Text.literal("Current:  " + shortHash(IntegrityCheck.currentHash()))
 						.formatted(Formatting.DARK_GRAY),
 				cx, cy, 0xFFFFFF);
-
-		super.render(context, mouseX, mouseY, delta);
 	}
 
 	@Override

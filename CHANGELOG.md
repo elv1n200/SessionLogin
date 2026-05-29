@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.3] — 2026-05-29
+
+### Fixed
+- **MC crash on launch when the integrity check triggered.**
+  `TamperWarningScreen.render()` called both `renderBackground()` and
+  `super.render()` (which also renders the background), so MC's
+  one-blur-per-frame assertion fired the moment any overlay (e.g. the
+  progress screen) sat in front of the warning, crashing the client
+  with `IllegalStateException: Can only blur once per frame`. The
+  screen now calls `super.render()` exactly once and draws its text on
+  top.
+
 ## [1.3.2] — 2026-05-29
 
 ### Fixed
@@ -139,6 +151,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   manager, name / skin editing via the official Mojang API, and
   AES-GCM-at-rest encryption with a local key.
 
+[1.3.3]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.3
 [1.3.2]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.2
 [1.3.1]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.1
 [1.3.0]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.0
