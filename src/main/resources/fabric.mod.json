@@ -12,6 +12,7 @@
 		"sources": "https://github.com/elv1n200/SessionLogin"
 	},
 	"license": "CC0-1.0",
+	"icon": "assets/sessionlogin/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"main": [
