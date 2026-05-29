@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.5] — 2026-05-29
+
+### Fixed
+- **TamperWarningScreen text was invisible** even though the buttons
+  rendered fine. The screen now uses plain `String` overloads of
+  `drawCenteredTextWithShadow` with explicit ARGB colors instead of
+  `Text.literal(...).formatted(...)` chains, drops the `⚠` character
+  (not in the default font), and tightens the Y offsets so all lines
+  fit on small windows. Also documents the render order constraint
+  (`renderWithTooltip` already calls `renderBackground` for us — we
+  must not call it again).
+
 ## [1.3.4] — 2026-05-29
 
 ### Fixed
@@ -166,6 +178,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   manager, name / skin editing via the official Mojang API, and
   AES-GCM-at-rest encryption with a local key.
 
+[1.3.5]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.5
 [1.3.4]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.4
 [1.3.3]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.3
 [1.3.2]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.2

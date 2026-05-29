@@ -11,7 +11,7 @@ Multi-Account-Manager, verschlüsselter Vault und Privacy-Toggles, damit deine
 Alts nicht über denselben Rechner korreliert werden können.
 
 <p>
-  <img alt="release"   src="https://img.shields.io/badge/release-v1.3.4-blue">
+  <img alt="release"   src="https://img.shields.io/badge/release-v1.3.5-blue">
   <img alt="license"   src="https://img.shields.io/badge/license-CC0--1.0-lightgrey">
   <img alt="Minecraft" src="https://img.shields.io/badge/Minecraft-1.21.11-62B132?logo=minecraft&logoColor=white">
   <img alt="Loader"    src="https://img.shields.io/badge/Loader-Fabric-DBB69B">
@@ -94,7 +94,7 @@ purely by token.
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for **Minecraft 1.21.11**.
 2. Install matching [Fabric API](https://modrinth.com/mod/fabric-api).
-3. Download `sessionlogin-1.3.4.jar` from the
+3. Download `sessionlogin-1.3.5.jar` from the
    [Releases](https://github.com/elv1n200/SessionLogin/releases) page
    and drop it into your `mods/` folder.
 4. *(Optional)* Install [ModMenu](https://modrinth.com/mod/modmenu).
