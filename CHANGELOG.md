@@ -3,6 +3,17 @@
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.1] — 2026-05-29
+
+### Added
+- **Modrinth App account import.** Bundles `sqlite-jdbc` as a Jar-in-Jar
+  and reads the `minecraft_users` table from
+  `%APPDATA%/ModrinthApp/app.db` (and the macOS / Linux equivalents).
+  The `Import from MC Launcher` button now tries the official Mojang
+  launcher and the Modrinth App and merges the results.
+- Jar grew from ~110 KB → ~14 MB because `sqlite-jdbc` ships native
+  libs for every platform.
+
 ## [1.3.0] — 2026-05-29
 
 ### Added
@@ -111,6 +122,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   manager, name / skin editing via the official Mojang API, and
   AES-GCM-at-rest encryption with a local key.
 
+[1.3.1]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.1
 [1.3.0]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.0
 [1.2.0]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.2.0
 [1.1.2]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.1.2

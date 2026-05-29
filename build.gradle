@@ -23,6 +23,12 @@ dependencies {
 	// player has ModMenu installed the entrypoint hooks; otherwise the class
 	// is simply never loaded.
 	modCompileOnly "com.terraformersmc:modmenu:17.0.0"
+
+	// Bundled inside the mod jar (Jar-in-Jar) so reading Modrinth App's
+	// SQLite account DB works out of the box. Without `include` the
+	// dependency would only be on the dev classpath and the class would
+	// be missing in a real install.
+	include implementation("org.xerial:sqlite-jdbc:3.46.1.3")
 }
 
 processResources {

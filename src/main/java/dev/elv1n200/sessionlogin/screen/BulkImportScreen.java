@@ -53,23 +53,40 @@ public class BulkImportScreen extends Screen {
 		if (running) {
 			return;
 		}
-		java.nio.file.Path file =
+		java.util.List<dev.elv1n200.sessionlogin.account.Account> all =
+				new java.util.ArrayList<>();
+		java.util.List<String> sources = new java.util.ArrayList<>();
+
+		java.nio.file.Path mojang =
 				dev.elv1n200.sessionlogin.util.LauncherImport.findFile();
-		if (file == null) {
-			status = "No launcher_accounts.json found in the usual places.";
+		if (mojang != null) {
+			java.util.List<dev.elv1n200.sessionlogin.account.Account> a =
+					dev.elv1n200.sessionlogin.util.LauncherImport.read(mojang);
+			if (!a.isEmpty()) {
+				all.addAll(a);
+				sources.add("Mojang launcher (" + a.size() + ")");
+			}
+		}
+		java.nio.file.Path modrinth =
+				dev.elv1n200.sessionlogin.util.ModrinthImport.findFile();
+		if (modrinth != null) {
+			java.util.List<dev.elv1n200.sessionlogin.account.Account> a =
+					dev.elv1n200.sessionlogin.util.ModrinthImport.read(modrinth);
+			if (!a.isEmpty()) {
+				all.addAll(a);
+				sources.add("Modrinth App (" + a.size() + ")");
+			}
+		}
+
+		if (all.isEmpty()) {
+			status = "No accounts found in the Mojang launcher or Modrinth App.";
 			return;
 		}
-		java.util.List<dev.elv1n200.sessionlogin.account.Account> accs =
-				dev.elv1n200.sessionlogin.util.LauncherImport.read(file);
-		if (accs.isEmpty()) {
-			status = "Launcher file at " + file + " had no usable accounts.";
-			return;
-		}
-		for (dev.elv1n200.sessionlogin.account.Account a : accs) {
+		for (dev.elv1n200.sessionlogin.account.Account a : all) {
 			SessionLogin.accountStore.add(a);
 		}
-		status = "Imported " + accs.size() + " account(s) from "
-				+ file.getFileName() + ".";
+		status = "Imported " + all.size() + " account(s) from "
+				+ String.join(", ", sources) + ".";
 	}
 
 	private void startImport() {
