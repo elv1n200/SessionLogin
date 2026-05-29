@@ -101,15 +101,20 @@ public final class AccountStore {
 				if (o.has("lastUsed")) {
 					a.setLastUsed(o.get("lastUsed").getAsLong());
 				}
-				if (vault.isUnlocked()) {
+				if (vault.isUnlocked() && !a.encToken().isEmpty()) {
 					try {
 						a.setToken(vault.crypto().decrypt(a.encToken()));
 					} catch (Exception e) {
+						SessionLogin.LOGGER.warn(
+								"Decrypt failed for account {} ({}): {}",
+								a.username(), a.uuid(), e.toString());
 						a.setToken("");
 					}
 				}
 				accounts.add(a);
 			}
+			SessionLogin.LOGGER.info(
+					"Loaded {} account(s) from accounts.json", accounts.size());
 			collapseDuplicatesByUuid(rawCount);
 		} catch (Exception e) {
 			SessionLogin.LOGGER.warn("Could not read accounts.json", e);

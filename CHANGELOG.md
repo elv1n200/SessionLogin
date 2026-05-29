@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.4] — 2026-05-29
+
+### Fixed
+- **Modrinth App import silently returned zero accounts on Windows.**
+  `ModrinthImport` built a JDBC URL of the form
+  `jdbc:sqlite:C:\path\app.db?mode=ro&immutable=0`, but sqlite-jdbc's
+  parser treated the `?` as part of the file name (Windows backslash
+  path) and threw "Die Syntax für den Dateinamen … ist falsch". The
+  open flags are now passed via `Properties` (`open_mode=1`) instead.
+
+### Added
+- `AccountStore.load()` now logs the loaded account count and any
+  decrypt failure with the offending UUID, so silent token-clearing
+  is no longer invisible.
+
 ## [1.3.3] — 2026-05-29
 
 ### Fixed
@@ -151,6 +166,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   manager, name / skin editing via the official Mojang API, and
   AES-GCM-at-rest encryption with a local key.
 
+[1.3.4]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.4
 [1.3.3]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.3
 [1.3.2]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.2
 [1.3.1]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.1

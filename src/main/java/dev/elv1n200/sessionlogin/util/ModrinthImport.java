@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Properties;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,9 +53,13 @@ public final class ModrinthImport {
 	 */
 	public static List<Account> read(Path file) {
 		List<Account> out = new ArrayList<>();
-		String url = "jdbc:sqlite:" + file.toAbsolutePath()
-				+ "?mode=ro&immutable=0";
-		try (Connection con = DriverManager.getConnection(url);
+		// On Windows, sqlite-jdbc parses `?` in the URL as part of the file
+		// name (the backslashes confuse the URI parser), so pass the open
+		// flags through Properties instead.
+		String url = "jdbc:sqlite:" + file.toAbsolutePath();
+		Properties props = new Properties();
+		props.setProperty("open_mode", "1"); // SQLITE_OPEN_READONLY
+		try (Connection con = DriverManager.getConnection(url, props);
 			 Statement stmt = con.createStatement();
 			 ResultSet rs = stmt.executeQuery(
 					 "SELECT uuid, username, access_token "
