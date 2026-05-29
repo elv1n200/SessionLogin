@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.2] — 2026-05-29
+
+### Fixed
+- **Duplicate accounts after re-importing from a launcher.** Modrinth
+  App refreshes its `access_token` periodically, so the old
+  token-equality dedup in `AccountStore.add()` thought every fresh
+  import was a brand-new account and stacked duplicates — with most of
+  them ending up with empty token strings because of a related
+  write-path bug. `add()` now dedups by **UUID** (stable) and updates
+  the token on the existing entry while preserving the user's label,
+  notes, and `lastUsed`.
+- **Self-healing of an already broken `accounts.json`.** `load()`
+  collapses duplicate UUIDs and prefers the entry that still has a
+  real encrypted token (or the most-recently-used one as a tie
+  breaker), then re-saves. Existing broken installs clean themselves
+  up on the next launch.
+
 ## [1.3.1] — 2026-05-29
 
 ### Added
@@ -122,6 +139,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   manager, name / skin editing via the official Mojang API, and
   AES-GCM-at-rest encryption with a local key.
 
+[1.3.2]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.2
 [1.3.1]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.1
 [1.3.0]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.3.0
 [1.2.0]: https://github.com/elv1n200/SessionLogin/releases/tag/v1.2.0

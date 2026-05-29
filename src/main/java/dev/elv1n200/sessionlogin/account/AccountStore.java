@@ -39,10 +39,24 @@ public final class AccountStore {
 	}
 
 	public void add(Account account) {
-		accounts.removeIf(a -> a.encToken().equals(account.encToken())
-				&& !account.encToken().isEmpty());
-		accounts.removeIf(a -> a.hasToken()
-				&& a.token().equals(account.token()));
+		// Dedup by UUID (stable across token refreshes). If the same account is
+		// re-imported, update its token in place but keep the user's label,
+		// notes, and lastUsed so they aren't clobbered.
+		for (Account existing : accounts) {
+			if (existing.uuid() != null
+					&& existing.uuid().equalsIgnoreCase(account.uuid())) {
+				existing.setType(account.type());
+				if (account.hasToken()) {
+					existing.setToken(account.token());
+				}
+				if (!account.encToken().isEmpty()) {
+					existing.setEncToken(account.encToken());
+				}
+				existing.touch();
+				save();
+				return;
+			}
+		}
 		accounts.add(account);
 		save();
 	}
@@ -64,6 +78,7 @@ public final class AccountStore {
 			if (arr == null) {
 				return;
 			}
+			int rawCount = arr.size();
 			for (var el : arr) {
 				JsonObject o = el.getAsJsonObject();
 				Account.Type type = Account.Type.SESSION;
@@ -95,8 +110,42 @@ public final class AccountStore {
 				}
 				accounts.add(a);
 			}
+			collapseDuplicatesByUuid(rawCount);
 		} catch (Exception e) {
 			SessionLogin.LOGGER.warn("Could not read accounts.json", e);
+		}
+	}
+
+	/**
+	 * Collapse duplicate UUIDs introduced by older buggy {@code add()} logic.
+	 * Keeps the best candidate per UUID (non-empty encToken wins; if a tie,
+	 * the most recently used). Re-saves only if anything was removed.
+	 */
+	private void collapseDuplicatesByUuid(int rawCount) {
+		java.util.Map<String, Account> best = new java.util.LinkedHashMap<>();
+		for (Account a : accounts) {
+			String key = a.uuid() == null ? "" : a.uuid().toLowerCase();
+			Account current = best.get(key);
+			if (current == null) {
+				best.put(key, a);
+				continue;
+			}
+			boolean curHasEnc = !current.encToken().isEmpty();
+			boolean newHasEnc = !a.encToken().isEmpty();
+			if (newHasEnc && !curHasEnc) {
+				best.put(key, a);
+			} else if (newHasEnc == curHasEnc
+					&& a.lastUsed() > current.lastUsed()) {
+				best.put(key, a);
+			}
+		}
+		if (best.size() != rawCount) {
+			accounts.clear();
+			accounts.addAll(best.values());
+			SessionLogin.LOGGER.info(
+					"Collapsed accounts.json duplicates: {} -> {}",
+					rawCount, accounts.size());
+			save();
 		}
 	}
 
