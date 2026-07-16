@@ -5,11 +5,11 @@ import dev.elv1n200.sessionlogin.account.Account;
 import dev.elv1n200.sessionlogin.util.ApiUtils;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import dev.elv1n200.sessionlogin.util.TokenUtils;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,7 +27,7 @@ public class BulkImportScreen extends Screen {
 	private volatile boolean running = false;
 
 	public BulkImportScreen() {
-		super(Text.literal(""));
+		super(Component.literal(""));
 	}
 
 	@Override
@@ -35,18 +35,18 @@ public class BulkImportScreen extends Screen {
 		int cx = this.width / 2;
 		int cy = this.height / 2;
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Import from clipboard"), b -> startImport()
-		).dimensions(cx - 100, cy, 200, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Import from clipboard"), b -> startImport()
+		).bounds(cx - 100, cy, 200, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Import from MC Launcher"), b -> startLauncherImport()
-		).dimensions(cx - 100, cy + 25, 200, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Import from MC Launcher"), b -> startLauncherImport()
+		).bounds(cx - 100, cy + 25, 200, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
-			assert this.client != null;
-			this.client.setScreen(new AccountManagerScreen());
-		}).dimensions(cx - 100, cy + 50, 200, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Back"), b -> {
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new AccountManagerScreen());
+		}).bounds(cx - 100, cy + 50, 200, 20).build());
 	}
 
 	private void startLauncherImport() {
@@ -93,8 +93,8 @@ public class BulkImportScreen extends Screen {
 		if (running) {
 			return;
 		}
-		assert this.client != null;
-		String clip = this.client.keyboard.getClipboard();
+		assert this.minecraft != null;
+		String clip = this.minecraft.keyboardHandler.getClipboard();
 		if (clip == null || clip.isBlank()) {
 			status = "Clipboard is empty.";
 			return;
@@ -132,14 +132,14 @@ public class BulkImportScreen extends Screen {
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		super.render(context, mouseX, mouseY, delta);
-		context.drawCenteredTextWithShadow(this.textRenderer,
-				surroundWithObfuscated(Text.literal("Bulk Import")
-						.formatted(Formatting.AQUA), 4),
+	public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(extractor, mouseX, mouseY, delta);
+		extractor.centeredText(this.font,
+				surroundWithObfuscated(Component.literal("Bulk Import")
+						.withStyle(ChatFormatting.AQUA), 4),
 				this.width / 2, this.height / 2 - 40, 0xFFFFFF);
-		context.drawCenteredTextWithShadow(this.textRenderer,
-				Text.literal(status).formatted(Formatting.GRAY),
+		extractor.centeredText(this.font,
+				Component.literal(status).withStyle(ChatFormatting.GRAY),
 				this.width / 2, this.height / 2 - 22, 0xFFFFFF);
 	}
 }

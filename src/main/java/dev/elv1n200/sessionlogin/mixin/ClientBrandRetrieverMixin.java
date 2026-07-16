@@ -20,7 +20,7 @@ public class ClientBrandRetrieverMixin {
 	private static void sessionlogin$spoofBrand(CallbackInfoReturnable<String> cir) {
 		if (SessionLogin.settings != null
 				&& SessionLogin.settings.spoofBrandAsVanilla()) {
-			cir.setReturnValue(ClientBrandRetriever.VANILLA);
+			cir.setReturnValue(ClientBrandRetriever.VANILLA_NAME);
 		}
 	}
 }

@@ -3,28 +3,28 @@ package dev.elv1n200.sessionlogin.screen;
 import dev.elv1n200.sessionlogin.SessionLogin;
 import dev.elv1n200.sessionlogin.util.ApiUtils;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.network.chat.Component;
 
 import static dev.elv1n200.sessionlogin.util.FormattingUtils.surroundWithObfuscated;
 
 public class EditAccountScreen extends Screen {
-	private TextFieldWidget nameField;
-	private TextFieldWidget skinUrlField;
-	private ButtonWidget nameButton;
-	private ButtonWidget skinButton;
-	private Text currentTitle;
+	private EditBox nameField;
+	private EditBox skinUrlField;
+	private Button nameButton;
+	private Button skinButton;
+	private Component currentTitle;
 
 	public EditAccountScreen() {
-		super(Text.literal(""));
+		super(Component.literal(""));
 		this.currentTitle = surroundWithObfuscated(
-				Text.literal("Edit Account").formatted(Formatting.AQUA), 5);
+				Component.literal("Edit Account").withStyle(ChatFormatting.AQUA), 5);
 	}
 
 	@Override
@@ -32,28 +32,28 @@ public class EditAccountScreen extends Screen {
 		int cx = this.width / 2;
 		int cy = this.height / 2;
 
-		nameField = new TextFieldWidget(this.textRenderer,
-				cx - 100, cy - 40, 200, 20, Text.literal("New Username"));
+		nameField = new EditBox(this.font,
+				cx - 100, cy - 40, 200, 20, Component.literal("New Username"));
 		nameField.setMaxLength(16);
-		nameField.setFocused(true);
-		this.addSelectableChild(nameField);
+		this.addRenderableWidget(nameField);
+		this.setInitialFocus(nameField);
 
-		skinUrlField = new TextFieldWidget(this.textRenderer,
-				cx - 100, cy, 200, 20, Text.literal("Skin URL"));
+		skinUrlField = new EditBox(this.font,
+				cx - 100, cy, 200, 20, Component.literal("Skin URL"));
 		skinUrlField.setMaxLength(2048);
-		this.addSelectableChild(skinUrlField);
+		this.addRenderableWidget(skinUrlField);
 
-		nameButton = ButtonWidget.builder(Text.literal("Change Name"), b -> {
-			String newName = nameField.getText().trim();
+		nameButton = Button.builder(Component.literal("Change Name"), b -> {
+			String newName = nameField.getValue().trim();
 			if (newName.isEmpty()) {
 				currentTitle = surroundWithObfuscated(
-						Text.literal("Please input a name")
-								.formatted(Formatting.RED), 5);
+						Component.literal("Please input a name")
+								.withStyle(ChatFormatting.RED), 5);
 				return;
 			}
 			if (!newName.matches("^[a-zA-Z0-9_]{3,16}$")) {
 				currentTitle = surroundWithObfuscated(
-						Text.literal("Invalid name").formatted(Formatting.RED), 7);
+						Component.literal("Invalid name").withStyle(ChatFormatting.RED), 7);
 				return;
 			}
 			int code = ApiUtils.changeName(newName,
@@ -62,89 +62,73 @@ public class EditAccountScreen extends Screen {
 				case 200 -> {
 					SessionLogin.currentSession = SessionUtils.createSession(
 							newName,
-							SessionLogin.currentSession.getUuidOrNull(),
+							SessionLogin.currentSession.getProfileId(),
 							SessionLogin.currentSession.getAccessToken());
-					yield surroundWithObfuscated(Text.literal(
-							"Successfully changed name").formatted(Formatting.GREEN), 4);
+					yield surroundWithObfuscated(Component.literal(
+							"Successfully changed name").withStyle(ChatFormatting.GREEN), 4);
 				}
-				case 429 -> surroundWithObfuscated(Text.literal(
-						"Too many requests").formatted(Formatting.RED), 5);
-				case 400 -> surroundWithObfuscated(Text.literal(
-						"Invalid name").formatted(Formatting.RED), 7);
-				case 401 -> surroundWithObfuscated(Text.literal(
-						"Invalid token").formatted(Formatting.RED), 7);
-				case 403 -> surroundWithObfuscated(Text.literal(
+				case 429 -> surroundWithObfuscated(Component.literal(
+						"Too many requests").withStyle(ChatFormatting.RED), 5);
+				case 400 -> surroundWithObfuscated(Component.literal(
+						"Invalid name").withStyle(ChatFormatting.RED), 7);
+				case 401 -> surroundWithObfuscated(Component.literal(
+						"Invalid token").withStyle(ChatFormatting.RED), 7);
+				case 403 -> surroundWithObfuscated(Component.literal(
 						"Name unavailable or changed in the last 35 days")
-						.formatted(Formatting.RED), 2);
-				default -> surroundWithObfuscated(Text.literal(
-						"Unknown error").formatted(Formatting.RED), 2);
+						.withStyle(ChatFormatting.RED), 2);
+				default -> surroundWithObfuscated(Component.literal(
+						"Unknown error").withStyle(ChatFormatting.RED), 2);
 			};
-		}).dimensions(cx - 100, cy + 25, 97, 20).build();
-		this.addDrawableChild(nameButton);
+		}).bounds(cx - 100, cy + 25, 97, 20).build();
+		this.addRenderableWidget(nameButton);
 
-		skinButton = ButtonWidget.builder(Text.literal("Change Skin"), b -> {
-			String skinUrl = skinUrlField.getText().trim();
+		skinButton = Button.builder(Component.literal("Change Skin"), b -> {
+			String skinUrl = skinUrlField.getValue().trim();
 			if (skinUrl.isEmpty()) {
 				currentTitle = surroundWithObfuscated(
-						Text.literal("Please input an URL")
-								.formatted(Formatting.RED), 5);
+						Component.literal("Please input an URL")
+								.withStyle(ChatFormatting.RED), 5);
 				return;
 			}
 			int code = ApiUtils.changeSkin(skinUrl,
 					SessionLogin.currentSession.getAccessToken());
 			currentTitle = switch (code) {
-				case 200 -> surroundWithObfuscated(Text.literal(
-						"Successfully changed skin").formatted(Formatting.GREEN), 4);
-				case 429 -> surroundWithObfuscated(Text.literal(
-						"Too many requests").formatted(Formatting.RED), 5);
-				case 401 -> surroundWithObfuscated(Text.literal(
-						"Invalid token").formatted(Formatting.RED), 7);
-				case -1 -> surroundWithObfuscated(Text.literal(
-						"Unknown error").formatted(Formatting.RED), 7);
-				default -> surroundWithObfuscated(Text.literal(
-						"Invalid Skin").formatted(Formatting.RED), 7);
+				case 200 -> surroundWithObfuscated(Component.literal(
+						"Successfully changed skin").withStyle(ChatFormatting.GREEN), 4);
+				case 429 -> surroundWithObfuscated(Component.literal(
+						"Too many requests").withStyle(ChatFormatting.RED), 5);
+				case 401 -> surroundWithObfuscated(Component.literal(
+						"Invalid token").withStyle(ChatFormatting.RED), 7);
+				case -1 -> surroundWithObfuscated(Component.literal(
+						"Unknown error").withStyle(ChatFormatting.RED), 7);
+				default -> surroundWithObfuscated(Component.literal(
+						"Invalid Skin").withStyle(ChatFormatting.RED), 7);
 			};
-		}).dimensions(cx + 3, cy + 25, 97, 20).build();
-		this.addDrawableChild(skinButton);
+		}).bounds(cx + 3, cy + 25, 97, 20).build();
+		this.addRenderableWidget(skinButton);
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
-			assert this.client != null;
-			this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
-		}).dimensions(cx - 100, cy + 50, 200, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Back"), b -> {
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+		}).bounds(cx - 100, cy + 50, 200, 20).build());
 
 		if (SessionUtils.isOriginalActive()) {
 			nameButton.active = false;
 			skinButton.active = false;
-			currentTitle = surroundWithObfuscated(Text.literal(
+			currentTitle = surroundWithObfuscated(Component.literal(
 					"Cannot modify original session")
-					.formatted(Formatting.YELLOW), 4);
+					.withStyle(ChatFormatting.YELLOW), 4);
 		}
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		super.render(context, mouseX, mouseY, delta);
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Username:"),
+	public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(extractor, mouseX, mouseY, delta);
+		extractor.text(this.font, Component.literal("Username:"),
 				this.width / 2 - 100, this.height / 2 - 52, 0xA0A0A0);
-		nameField.render(context, mouseX, mouseY, delta);
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Skin URL:"),
+		extractor.text(this.font, Component.literal("Skin URL:"),
 				this.width / 2 - 100, this.height / 2 - 10, 0xA0A0A0);
-		skinUrlField.render(context, mouseX, mouseY, delta);
-		context.drawCenteredTextWithShadow(this.textRenderer, this.currentTitle,
+		extractor.centeredText(this.font, this.currentTitle,
 				this.width / 2, this.height / 2 - 75, 0xFFFFFF);
-	}
-
-	@Override
-	public boolean keyPressed(net.minecraft.client.input.KeyInput input) {
-		return nameField.keyPressed(input)
-				|| skinUrlField.keyPressed(input)
-				|| super.keyPressed(input);
-	}
-
-	@Override
-	public boolean charTyped(net.minecraft.client.input.CharInput input) {
-		return nameField.charTyped(input)
-				|| skinUrlField.charTyped(input)
-				|| super.charTyped(input);
 	}
 }

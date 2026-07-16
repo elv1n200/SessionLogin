@@ -2,22 +2,22 @@ package dev.elv1n200.sessionlogin.screen;
 
 import dev.elv1n200.sessionlogin.SessionLogin;
 import dev.elv1n200.sessionlogin.account.Account;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import static dev.elv1n200.sessionlogin.util.FormattingUtils.surroundWithObfuscated;
 
 public class EditEntryScreen extends Screen {
 	private final Account account;
-	private TextFieldWidget labelField;
-	private TextFieldWidget notesField;
+	private EditBox labelField;
+	private EditBox notesField;
 
 	public EditEntryScreen(Account account) {
-		super(Text.literal(""));
+		super(Component.literal(""));
 		this.account = account;
 	}
 
@@ -26,59 +26,44 @@ public class EditEntryScreen extends Screen {
 		int cx = this.width / 2;
 		int cy = this.height / 2;
 
-		labelField = new TextFieldWidget(this.textRenderer,
-				cx - 100, cy - 30, 200, 20, Text.literal("Label"));
+		labelField = new EditBox(this.font,
+				cx - 100, cy - 30, 200, 20, Component.literal("Label"));
 		labelField.setMaxLength(48);
-		labelField.setText(account.label());
-		this.addSelectableChild(labelField);
+		labelField.setValue(account.label());
+		this.addRenderableWidget(labelField);
+		this.setInitialFocus(labelField);
 
-		notesField = new TextFieldWidget(this.textRenderer,
-				cx - 100, cy + 10, 200, 20, Text.literal("Notes"));
+		notesField = new EditBox(this.font,
+				cx - 100, cy + 10, 200, 20, Component.literal("Notes"));
 		notesField.setMaxLength(256);
-		notesField.setText(account.notes());
-		this.addSelectableChild(notesField);
+		notesField.setValue(account.notes());
+		this.addRenderableWidget(notesField);
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), b -> {
-			String lbl = labelField.getText().trim();
+		this.addRenderableWidget(Button.builder(Component.literal("Save"), b -> {
+			String lbl = labelField.getValue().trim();
 			account.setLabel(lbl.isEmpty() ? account.username() : lbl);
-			account.setNotes(notesField.getText().trim());
+			account.setNotes(notesField.getValue().trim());
 			SessionLogin.accountStore.save();
-			assert this.client != null;
-			this.client.setScreen(new AccountManagerScreen());
-		}).dimensions(cx - 100, cy + 40, 97, 20).build());
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new AccountManagerScreen());
+		}).bounds(cx - 100, cy + 40, 97, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Cancel"), b -> {
-			assert this.client != null;
-			this.client.setScreen(new AccountManagerScreen());
-		}).dimensions(cx + 3, cy + 40, 97, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> {
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new AccountManagerScreen());
+		}).bounds(cx + 3, cy + 40, 97, 20).build());
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		super.render(context, mouseX, mouseY, delta);
-		context.drawCenteredTextWithShadow(this.textRenderer,
-				surroundWithObfuscated(Text.literal(
-						"Edit: " + account.username()).formatted(Formatting.AQUA), 4),
+	public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(extractor, mouseX, mouseY, delta);
+		extractor.centeredText(this.font,
+				surroundWithObfuscated(Component.literal(
+						"Edit: " + account.username()).withStyle(ChatFormatting.AQUA), 4),
 				this.width / 2, this.height / 2 - 60, 0xFFFFFF);
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Label:"),
+		extractor.text(this.font, Component.literal("Label:"),
 				this.width / 2 - 100, this.height / 2 - 42, 0xA0A0A0);
-		labelField.render(context, mouseX, mouseY, delta);
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Notes:"),
+		extractor.text(this.font, Component.literal("Notes:"),
 				this.width / 2 - 100, this.height / 2 - 2, 0xA0A0A0);
-		notesField.render(context, mouseX, mouseY, delta);
-	}
-
-	@Override
-	public boolean keyPressed(net.minecraft.client.input.KeyInput input) {
-		return labelField.keyPressed(input)
-				|| notesField.keyPressed(input)
-				|| super.keyPressed(input);
-	}
-
-	@Override
-	public boolean charTyped(net.minecraft.client.input.CharInput input) {
-		return labelField.charTyped(input)
-				|| notesField.charTyped(input)
-				|| super.charTyped(input);
 	}
 }

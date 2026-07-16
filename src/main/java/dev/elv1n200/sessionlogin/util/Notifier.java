@@ -1,10 +1,10 @@
 package dev.elv1n200.sessionlogin.util;
 
 import dev.elv1n200.sessionlogin.SessionLogin;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.toast.SystemToast;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.network.chat.Component;
 
 /**
  * Minecraft-style toasts triggered by login or account switches.
@@ -12,30 +12,31 @@ import net.minecraft.util.Formatting;
  */
 public final class Notifier {
 
-	private static final SystemToast.Type SL_TOAST = new SystemToast.Type();
+	private static final SystemToast.SystemToastId SL_TOAST =
+			new SystemToast.SystemToastId();
 
 	private Notifier() {
 	}
 
 	public static void loggedIn(String username) {
-		toast(Text.literal("SessionLogin").formatted(Formatting.GOLD),
-				Text.literal("Logged in as " + username).formatted(Formatting.WHITE));
+		toast(Component.literal("SessionLogin").withStyle(ChatFormatting.GOLD),
+				Component.literal("Logged in as " + username).withStyle(ChatFormatting.WHITE));
 	}
 
 	public static void info(String title, String message) {
-		toast(Text.literal(title).formatted(Formatting.GOLD),
-				Text.literal(message).formatted(Formatting.WHITE));
+		toast(Component.literal(title).withStyle(ChatFormatting.GOLD),
+				Component.literal(message).withStyle(ChatFormatting.WHITE));
 	}
 
-	private static void toast(Text title, Text body) {
+	private static void toast(Component title, Component body) {
 		if (SessionLogin.settings == null || !SessionLogin.settings.showToasts()) {
 			return;
 		}
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 		if (mc == null) {
 			return;
 		}
 		mc.execute(() ->
-				SystemToast.show(mc.getToastManager(), SL_TOAST, title, body));
+				SystemToast.add(mc.getToastManager(), SL_TOAST, title, body));
 	}
 }

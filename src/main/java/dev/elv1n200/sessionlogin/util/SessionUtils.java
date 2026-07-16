@@ -1,8 +1,8 @@
 package dev.elv1n200.sessionlogin.util;
 
 import dev.elv1n200.sessionlogin.SessionLogin;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.session.Session;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -13,11 +13,11 @@ public final class SessionUtils {
 	}
 
 	public static String getUsername() {
-		return MinecraftClient.getInstance().getSession().getUsername();
+		return Minecraft.getInstance().getUser().getName();
 	}
 
-	public static Session getSession() {
-		return MinecraftClient.getInstance().getSession();
+	public static User getSession() {
+		return Minecraft.getInstance().getUser();
 	}
 
 	/** Insert dashes into a 32-char Mojang UUID; pass through otherwise. */
@@ -32,8 +32,8 @@ public final class SessionUtils {
 		return uuid;
 	}
 
-	public static Session createSession(String username, String uuid, String token) {
-		return new Session(
+	public static User createSession(String username, String uuid, String token) {
+		return new User(
 				username,
 				UUID.fromString(dashUuid(uuid)),
 				token,
@@ -41,8 +41,8 @@ public final class SessionUtils {
 				Optional.empty());
 	}
 
-	public static Session createSession(String username, UUID uuid, String token) {
-		return new Session(
+	public static User createSession(String username, UUID uuid, String token) {
+		return new User(
 				username,
 				uuid,
 				token,
@@ -50,7 +50,7 @@ public final class SessionUtils {
 				Optional.empty());
 	}
 
-	public static void setSession(Session session) {
+	public static void setSession(User session) {
 		SessionLogin.currentSession = session;
 	}
 

@@ -5,36 +5,37 @@ import dev.elv1n200.sessionlogin.account.Account;
 import dev.elv1n200.sessionlogin.util.ApiUtils;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import dev.elv1n200.sessionlogin.util.TokenUtils;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.network.chat.Component;
 
 public class LoginScreen extends Screen {
 
 	private static final int KEY_ENTER = 257;
 	private static final int KEY_KP_ENTER = 335;
 
-	private TextFieldWidget sessionField;
-	private ButtonWidget loginButton;
-	private ButtonWidget restoreButton;
-	private ButtonWidget saveButton;
+	private EditBox sessionField;
+	private Button loginButton;
+	private Button restoreButton;
+	private Button saveButton;
 
-	private volatile Text status = Text.literal("Paste a session ID and press Login")
-			.formatted(Formatting.GRAY);
-	private volatile Text expiryText = Text.empty();
+	private volatile Component status = Component.literal("Paste a session ID and press Login")
+			.withStyle(ChatFormatting.GRAY);
+	private volatile Component expiryText = Component.empty();
 	private volatile boolean busy = false;
 
 	private String[] lastInfo;
 	private String lastToken;
 
 	public LoginScreen() {
-		super(Text.literal("Session Login"));
+		super(Component.literal("Session Login"));
 	}
 
 	@Override
@@ -42,57 +43,57 @@ public class LoginScreen extends Screen {
 		int cx = this.width / 2;
 		int cy = this.height / 2;
 
-		sessionField = new TextFieldWidget(this.textRenderer,
-				cx - 100, cy, 200, 20, Text.literal("Session Input"));
+		sessionField = new EditBox(this.font,
+				cx - 100, cy, 200, 20, Component.literal("Session Input"));
 		sessionField.setMaxLength(32767);
-		sessionField.setFocused(true);
-		this.addSelectableChild(sessionField);
+		this.addRenderableWidget(sessionField);
+		this.setInitialFocus(sessionField);
 
-		loginButton = ButtonWidget.builder(Text.literal("Login"), b -> doLogin())
-				.dimensions(cx - 100, cy + 25, 64, 20).build();
-		this.addDrawableChild(loginButton);
+		loginButton = Button.builder(Component.literal("Login"), b -> doLogin())
+				.bounds(cx - 100, cy + 25, 64, 20).build();
+		this.addRenderableWidget(loginButton);
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Paste"), b -> {
-			String clip = MinecraftClient.getInstance().keyboard.getClipboard();
-			sessionField.setText(TokenUtils.clean(clip));
-			status = Text.literal("Pasted from clipboard").formatted(Formatting.GRAY);
-		}).dimensions(cx - 33, cy + 25, 64, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Paste"), b -> {
+			String clip = Minecraft.getInstance().keyboardHandler.getClipboard();
+			sessionField.setValue(TokenUtils.clean(clip));
+			status = Component.literal("Pasted from clipboard").withStyle(ChatFormatting.GRAY);
+		}).bounds(cx - 33, cy + 25, 64, 20).build());
 
-		restoreButton = ButtonWidget.builder(Text.literal("Restore"), b -> {
+		restoreButton = Button.builder(Component.literal("Restore"), b -> {
 			SessionUtils.restoreSession();
-			expiryText = Text.empty();
+			expiryText = Component.empty();
 			lastInfo = null;
 			lastToken = null;
-			status = Text.literal("Restored your original session")
-					.formatted(Formatting.GREEN);
+			status = Component.literal("Restored your original session")
+					.withStyle(ChatFormatting.GREEN);
 			saveButton.active = false;
 			restoreButton.active = false;
-		}).dimensions(cx + 34, cy + 25, 66, 20).build();
-		this.addDrawableChild(restoreButton);
+		}).bounds(cx + 34, cy + 25, 66, 20).build();
+		this.addRenderableWidget(restoreButton);
 
-		saveButton = ButtonWidget.builder(Text.literal("Save to accounts"), b -> {
+		saveButton = Button.builder(Component.literal("Save to accounts"), b -> {
 			if (lastInfo == null || lastToken == null) {
-				status = Text.literal("Log in first").formatted(Formatting.RED);
+				status = Component.literal("Log in first").withStyle(ChatFormatting.RED);
 				return;
 			}
 			Account acc = new Account(lastInfo[0], lastInfo[0],
 					SessionUtils.dashUuid(lastInfo[1]), lastToken);
 			acc.touch();
 			SessionLogin.accountStore.add(acc);
-			status = Text.literal("Saved " + lastInfo[0] + " to accounts")
-					.formatted(Formatting.GREEN);
-		}).dimensions(cx - 100, cy + 50, 200, 20).build();
-		this.addDrawableChild(saveButton);
+			status = Component.literal("Saved " + lastInfo[0] + " to accounts")
+					.withStyle(ChatFormatting.GREEN);
+		}).bounds(cx - 100, cy + 50, 200, 20).build();
+		this.addRenderableWidget(saveButton);
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Accounts"), b -> {
-			assert this.client != null;
-			this.client.setScreen(new AccountManagerScreen());
-		}).dimensions(cx - 100, cy + 75, 97, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Accounts"), b -> {
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new AccountManagerScreen());
+		}).bounds(cx - 100, cy + 75, 97, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
-			assert this.client != null;
-			this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
-		}).dimensions(cx + 3, cy + 75, 97, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Back"), b -> {
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+		}).bounds(cx + 3, cy + 75, 97, 20).build());
 
 		restoreButton.active = !SessionUtils.isOriginalActive();
 		saveButton.active = false;
@@ -102,28 +103,28 @@ public class LoginScreen extends Screen {
 		if (busy) {
 			return;
 		}
-		String input = TokenUtils.clean(sessionField.getText());
+		String input = TokenUtils.clean(sessionField.getValue());
 		if (input.isEmpty()) {
-			status = Text.literal("Session ID cannot be empty")
-					.formatted(Formatting.RED);
+			status = Component.literal("Session ID cannot be empty")
+					.withStyle(ChatFormatting.RED);
 			return;
 		}
 
 		busy = true;
 		loginButton.active = false;
-		status = Text.literal("Checking session ...").formatted(Formatting.YELLOW);
-		expiryText = Text.empty();
+		status = Component.literal("Checking session ...").withStyle(ChatFormatting.YELLOW);
+		expiryText = Component.empty();
 
 		new Thread(() -> {
 			try {
 				String[] info = ApiUtils.getProfileInfo(input);
-				MinecraftClient.getInstance().execute(() -> {
+				Minecraft.getInstance().execute(() -> {
 					lastInfo = info;
 					lastToken = input;
 					SessionUtils.setSession(SessionUtils.createSession(
 							info[0], info[1], input));
-					status = Text.literal("✔ Logged in as " + info[0])
-							.formatted(Formatting.GREEN, Formatting.BOLD);
+					status = Component.literal("✔ Logged in as " + info[0])
+							.withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD);
 					updateExpiry(input);
 					restoreButton.active = true;
 					saveButton.active = true;
@@ -132,10 +133,10 @@ public class LoginScreen extends Screen {
 					dev.elv1n200.sessionlogin.util.Notifier.loggedIn(info[0]);
 				});
 			} catch (Throwable t) {
-				MinecraftClient.getInstance().execute(() -> {
+				Minecraft.getInstance().execute(() -> {
 					lastInfo = null;
-					status = Text.literal("✘ " + reason(t))
-							.formatted(Formatting.RED);
+					status = Component.literal("✘ " + reason(t))
+							.withStyle(ChatFormatting.RED);
 					busy = false;
 					loginButton.active = true;
 				});
@@ -156,65 +157,49 @@ public class LoginScreen extends Screen {
 
 	private void updateExpiry(String token) {
 		String label = TokenUtils.expiryLabel(token);
-		Formatting color = switch (label) {
-			case "expired" -> Formatting.RED;
-			case "unknown" -> Formatting.GRAY;
+		ChatFormatting color = switch (label) {
+			case "expired" -> ChatFormatting.RED;
+			case "unknown" -> ChatFormatting.GRAY;
 			default -> TokenUtils.expiryEpochSeconds(token)
 					- System.currentTimeMillis() / 1000L < 3600
-					? Formatting.YELLOW : Formatting.GREEN;
+					? ChatFormatting.YELLOW : ChatFormatting.GREEN;
 		};
-		expiryText = Text.literal("Token expires: " + label).formatted(color);
+		expiryText = Component.literal("Token expires: " + label).withStyle(color);
 	}
 
-	private Text activeLine() {
+	private Component activeLine() {
 		String name = SessionUtils.getUsername();
 		if (SessionUtils.isOriginalActive()) {
-			return Text.literal("Active: ").formatted(Formatting.GRAY)
-					.append(Text.literal(name + " (original)")
-							.formatted(Formatting.WHITE));
+			return Component.literal("Active: ").withStyle(ChatFormatting.GRAY)
+					.append(Component.literal(name + " (original)")
+							.withStyle(ChatFormatting.WHITE));
 		}
-		return Text.literal("Active: ").formatted(Formatting.GRAY)
-				.append(Text.literal(name).formatted(Formatting.GREEN))
-				.append(Text.literal(" ✔").formatted(Formatting.GREEN));
+		return Component.literal("Active: ").withStyle(ChatFormatting.GRAY)
+				.append(Component.literal(name).withStyle(ChatFormatting.GREEN))
+				.append(Component.literal(" ✔").withStyle(ChatFormatting.GREEN));
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		super.render(context, mouseX, mouseY, delta);
+	public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(extractor, mouseX, mouseY, delta);
 		int cx = this.width / 2;
 		int cy = this.height / 2;
 
-		context.drawCenteredTextWithShadow(this.textRenderer,
-				Text.literal("Session Login").formatted(Formatting.GOLD),
+		extractor.centeredText(this.font,
+				Component.literal("Session Login").withStyle(ChatFormatting.GOLD),
 				cx, cy - 60, 0xFFFFFF);
-		context.drawCenteredTextWithShadow(this.textRenderer, activeLine(),
-				cx, cy - 46, 0xFFFFFF);
-		context.drawCenteredTextWithShadow(this.textRenderer, this.status,
-				cx, cy - 28, 0xFFFFFF);
-		context.drawCenteredTextWithShadow(this.textRenderer, this.expiryText,
-				cx, cy - 16, 0xFFFFFF);
-
-		sessionField.render(context, mouseX, mouseY, delta);
+		extractor.centeredText(this.font, activeLine(), cx, cy - 46, 0xFFFFFF);
+		extractor.centeredText(this.font, this.status, cx, cy - 28, 0xFFFFFF);
+		extractor.centeredText(this.font, this.expiryText, cx, cy - 16, 0xFFFFFF);
 	}
 
 	@Override
-	public boolean keyPressed(net.minecraft.client.input.KeyInput input) {
-		int key = input.getKeycode();
+	public boolean keyPressed(KeyEvent input) {
+		int key = input.key();
 		if (key == KEY_ENTER || key == KEY_KP_ENTER) {
 			doLogin();
 			return true;
 		}
-		if (sessionField.keyPressed(input) || sessionField.isActive()) {
-			return true;
-		}
 		return super.keyPressed(input);
-	}
-
-	@Override
-	public boolean charTyped(net.minecraft.client.input.CharInput input) {
-		if (sessionField.charTyped(input)) {
-			return true;
-		}
-		return super.charTyped(input);
 	}
 }

@@ -4,11 +4,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.elv1n200.sessionlogin.SessionLogin;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,15 +25,15 @@ public class ImportExportScreen extends Screen {
 	private static final String FILE_NAME = "sessionlogin-export.json";
 
 	private final boolean importMode;
-	private Text status;
+	private Component status;
 
 	public ImportExportScreen(boolean importMode) {
-		super(Text.literal(""));
+		super(Component.literal(""));
 		this.importMode = importMode;
-		this.status = Text.literal(importMode
+		this.status = Component.literal(importMode
 				? "Place export file as <gameDir>/" + FILE_NAME
 				: "Will write to <gameDir>/" + FILE_NAME)
-				.formatted(Formatting.GRAY);
+				.withStyle(ChatFormatting.GRAY);
 	}
 
 	@Override
@@ -42,18 +42,18 @@ public class ImportExportScreen extends Screen {
 		int cy = this.height / 2;
 
 		String action = importMode ? "Import" : "Export";
-		this.addDrawableChild(ButtonWidget.builder(Text.literal(action), b -> {
+		this.addRenderableWidget(Button.builder(Component.literal(action), b -> {
 			if (importMode) {
 				doImport();
 			} else {
 				doExport();
 			}
-		}).dimensions(cx - 100, cy, 200, 20).build());
+		}).bounds(cx - 100, cy, 200, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
-			assert this.client != null;
-			this.client.setScreen(new AccountManagerScreen());
-		}).dimensions(cx - 100, cy + 25, 200, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Back"), b -> {
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new AccountManagerScreen());
+		}).bounds(cx - 100, cy + 25, 200, 20).build());
 	}
 
 	private Path file() {
@@ -81,19 +81,19 @@ public class ImportExportScreen extends Screen {
 					? JsonParser.parseString(Files.readString(accountsFile()))
 					: new JsonObject());
 			Files.writeString(file(), out.toString());
-			status = Text.literal("Exported to " + file())
-					.formatted(Formatting.GREEN);
+			status = Component.literal("Exported to " + file())
+					.withStyle(ChatFormatting.GREEN);
 		} catch (Exception e) {
-			status = Text.literal("Export failed: " + e.getMessage())
-					.formatted(Formatting.RED);
+			status = Component.literal("Export failed: " + e.getMessage())
+					.withStyle(ChatFormatting.RED);
 		}
 	}
 
 	private void doImport() {
 		try {
 			if (!Files.exists(file())) {
-				status = Text.literal("No file at " + file())
-						.formatted(Formatting.RED);
+				status = Component.literal("No file at " + file())
+						.withStyle(ChatFormatting.RED);
 				return;
 			}
 			JsonObject in = JsonParser.parseString(Files.readString(file()))
@@ -112,26 +112,25 @@ public class ImportExportScreen extends Screen {
 			SessionLogin.accountStore = new dev.elv1n200.sessionlogin.account.AccountStore(
 					metaFile().getParent(), SessionLogin.vault);
 			SessionLogin.accountStore.load();
-			status = Text.literal("Imported. " + (SessionLogin.vault.isPasswordMode()
+			status = Component.literal("Imported. " + (SessionLogin.vault.isPasswordMode()
 					? "Vault locked — unlock to use." : "Done."))
-					.formatted(Formatting.GREEN);
+					.withStyle(ChatFormatting.GREEN);
 		} catch (Exception e) {
-			status = Text.literal("Import failed: " + e.getMessage())
-					.formatted(Formatting.RED);
+			status = Component.literal("Import failed: " + e.getMessage())
+					.withStyle(ChatFormatting.RED);
 		}
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		super.render(context, mouseX, mouseY, delta);
+	public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(extractor, mouseX, mouseY, delta);
 		int cx = this.width / 2;
 		int cy = this.height / 2;
-		context.drawCenteredTextWithShadow(this.textRenderer,
-				surroundWithObfuscated(Text.literal(
+		extractor.centeredText(this.font,
+				surroundWithObfuscated(Component.literal(
 						importMode ? "Import vault" : "Export vault")
-						.formatted(Formatting.AQUA), 4),
+						.withStyle(ChatFormatting.AQUA), 4),
 				cx, cy - 40, 0xFFFFFF);
-		context.drawCenteredTextWithShadow(this.textRenderer, status,
-				cx, cy - 22, 0xFFFFFF);
+		extractor.centeredText(this.font, status, cx, cy - 22, 0xFFFFFF);
 	}
 }

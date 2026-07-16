@@ -2,7 +2,7 @@ package dev.elv1n200.sessionlogin.util;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
 import java.net.URI;
@@ -70,9 +70,9 @@ public final class ApiUtils {
 			String[] info = getProfileInfo(token);
 			String ign = info[0];
 			UUID uuid = UUID.fromString(SessionUtils.dashUuid(info[1]));
-			var session = MinecraftClient.getInstance().getSession();
-			return ign.equals(session.getUsername())
-					&& uuid.equals(session.getUuidOrNull());
+			var session = Minecraft.getInstance().getUser();
+			return ign.equals(session.getName())
+					&& uuid.equals(session.getProfileId());
 		} catch (Exception e) {
 			return false;
 		}

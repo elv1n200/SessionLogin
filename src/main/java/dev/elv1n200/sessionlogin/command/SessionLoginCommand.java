@@ -7,11 +7,11 @@ import dev.elv1n200.sessionlogin.account.Account;
 import dev.elv1n200.sessionlogin.util.Notifier;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import dev.elv1n200.sessionlogin.util.TokenUtils;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 /**
  * Client-side {@code /sl} command for quick session control without opening
@@ -32,28 +32,28 @@ public final class SessionLoginCommand {
 						return builder.buildFuture();
 					};
 
-			dispatcher.register(ClientCommandManager.literal("sl")
+			dispatcher.register(ClientCommands.literal("sl")
 					.executes(ctx -> {
 						help(ctx.getSource());
 						return 1;
 					})
-					.then(ClientCommandManager.literal("list").executes(ctx -> {
+					.then(ClientCommands.literal("list").executes(ctx -> {
 						list(ctx.getSource());
 						return 1;
 					}))
-					.then(ClientCommandManager.literal("current").executes(ctx -> {
+					.then(ClientCommands.literal("current").executes(ctx -> {
 						current(ctx.getSource());
 						return 1;
 					}))
-					.then(ClientCommandManager.literal("restore").executes(ctx -> {
+					.then(ClientCommands.literal("restore").executes(ctx -> {
 						SessionUtils.restoreSession();
 						send(ctx.getSource(),
-								Text.literal("Restored original session")
-										.formatted(Formatting.GREEN));
+								Component.literal("Restored original session")
+										.withStyle(ChatFormatting.GREEN));
 						return 1;
 					}))
-					.then(ClientCommandManager.literal("switch").then(
-							ClientCommandManager.argument(
+					.then(ClientCommands.literal("switch").then(
+							ClientCommands.argument(
 									"label", StringArgumentType.greedyString())
 									.suggests(labelSuggestions)
 									.executes(ctx -> {
@@ -65,31 +65,31 @@ public final class SessionLoginCommand {
 	}
 
 	private static void help(FabricClientCommandSource src) {
-		send(src, Text.literal("/sl list | current | switch <label> | restore")
-				.formatted(Formatting.GRAY));
+		send(src, Component.literal("/sl list | current | switch <label> | restore")
+				.withStyle(ChatFormatting.GRAY));
 	}
 
 	private static void list(FabricClientCommandSource src) {
 		if (SessionLogin.accountStore.accounts().isEmpty()) {
-			send(src, Text.literal("No saved accounts").formatted(Formatting.GRAY));
+			send(src, Component.literal("No saved accounts").withStyle(ChatFormatting.GRAY));
 			return;
 		}
 		for (Account a : SessionLogin.accountStore.accounts()) {
 			String tag = a.isOffline() ? " [offline]"
 					: " [" + TokenUtils.expiryLabel(a.token()) + "]";
-			send(src, Text.literal("- " + a.label() + " (" + a.username() + ")")
-					.formatted(Formatting.WHITE)
-					.append(Text.literal(tag).formatted(Formatting.DARK_GRAY)));
+			send(src, Component.literal("- " + a.label() + " (" + a.username() + ")")
+					.withStyle(ChatFormatting.WHITE)
+					.append(Component.literal(tag).withStyle(ChatFormatting.DARK_GRAY)));
 		}
 	}
 
 	private static void current(FabricClientCommandSource src) {
 		String name = SessionUtils.getUsername();
 		boolean original = SessionUtils.isOriginalActive();
-		Text t = Text.literal("Active: ").formatted(Formatting.GRAY)
-				.append(Text.literal(name).formatted(Formatting.WHITE))
-				.append(Text.literal(original ? " (original)" : " (swapped)")
-						.formatted(original ? Formatting.GRAY : Formatting.GREEN));
+		Component t = Component.literal("Active: ").withStyle(ChatFormatting.GRAY)
+				.append(Component.literal(name).withStyle(ChatFormatting.WHITE))
+				.append(Component.literal(original ? " (original)" : " (swapped)")
+						.withStyle(original ? ChatFormatting.GRAY : ChatFormatting.GREEN));
 		send(src, t);
 	}
 
@@ -104,24 +104,24 @@ public final class SessionLoginCommand {
 					SessionUtils.setSession(SessionUtils.createSession(
 							a.username(), a.uuid(), a.token()));
 				} else {
-					send(src, Text.literal("Vault is locked")
-							.formatted(Formatting.RED));
+					send(src, Component.literal("Vault is locked")
+							.withStyle(ChatFormatting.RED));
 					return;
 				}
 				a.touch();
 				SessionLogin.accountStore.save();
 				Notifier.loggedIn(a.username());
-				send(src, Text.literal("Switched to " + a.username())
-						.formatted(Formatting.GREEN));
+				send(src, Component.literal("Switched to " + a.username())
+						.withStyle(ChatFormatting.GREEN));
 				return;
 			}
 		}
-		send(src, Text.literal("No account named '" + label + "'")
-				.formatted(Formatting.RED));
+		send(src, Component.literal("No account named '" + label + "'")
+				.withStyle(ChatFormatting.RED));
 	}
 
-	private static void send(FabricClientCommandSource src, Text msg) {
-		src.sendFeedback(Text.literal("[SL] ").formatted(Formatting.GOLD)
+	private static void send(FabricClientCommandSource src, Component msg) {
+		src.sendFeedback(Component.literal("[SL] ").withStyle(ChatFormatting.GOLD)
 				.append(msg));
 	}
 }

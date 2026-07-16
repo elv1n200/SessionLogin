@@ -5,14 +5,14 @@ import dev.elv1n200.sessionlogin.account.Account;
 import dev.elv1n200.sessionlogin.util.ApiUtils;
 import dev.elv1n200.sessionlogin.util.SessionUtils;
 import dev.elv1n200.sessionlogin.util.TokenUtils;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,8 +40,8 @@ public class AccountManagerScreen extends Screen {
 	private static Sort sort = Sort.RECENT;
 	private static String query = "";
 
-	private Text status = Text.empty();
-	private TextFieldWidget searchField;
+	private Component status = Component.empty();
+	private EditBox searchField;
 	private int page = 0;
 
 	private int titleY;
@@ -51,7 +51,7 @@ public class AccountManagerScreen extends Screen {
 	private List<Account> visibleAccounts = java.util.Collections.emptyList();
 
 	public AccountManagerScreen() {
-		super(Text.literal(""));
+		super(Component.literal(""));
 	}
 
 	@Override
@@ -63,15 +63,15 @@ public class AccountManagerScreen extends Screen {
 			this.titleY = ly - 30;
 			this.statusY = -100;
 			this.emptyY = -100;
-			this.addDrawableChild(ButtonWidget.builder(
-					Text.literal("Unlock Vault"), b -> {
-						assert this.client != null;
-						this.client.setScreen(new UnlockScreen());
-					}).dimensions(cx - 100, ly, 200, 20).build());
-			this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
-				assert this.client != null;
-				this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
-			}).dimensions(cx - 100, ly + 25, 200, 20).build());
+			this.addRenderableWidget(Button.builder(
+					Component.literal("Unlock Vault"), b -> {
+						assert this.minecraft != null;
+						this.minecraft.setScreen(new UnlockScreen());
+					}).bounds(cx - 100, ly, 200, 20).build());
+			this.addRenderableWidget(Button.builder(Component.literal("Back"), b -> {
+				assert this.minecraft != null;
+				this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+			}).bounds(cx - 100, ly + 25, 200, 20).build());
 			return;
 		}
 
@@ -91,22 +91,22 @@ public class AccountManagerScreen extends Screen {
 		this.statusY = top + 12;
 
 		int searchY = top + 28;
-		searchField = new TextFieldWidget(this.textRenderer,
-				cx - 130, searchY + 1, 180, 18, Text.literal("Search"));
+		searchField = new EditBox(this.font,
+				cx - 130, searchY + 1, 180, 18, Component.literal("Search"));
 		searchField.setMaxLength(48);
-		searchField.setText(query);
-		searchField.setChangedListener(s -> {
+		searchField.setValue(query);
+		searchField.setResponder(s -> {
 			query = s;
 			page = 0;
-			this.clearAndInit();
+			this.rebuildWidgets();
 		});
-		this.addSelectableChild(searchField);
+		this.addRenderableWidget(searchField);
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Sort: " + sort.name()), b -> {
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Sort: " + sort.name()), b -> {
 					sort = Sort.values()[(sort.ordinal() + 1) % Sort.values().length];
-					this.clearAndInit();
-				}).dimensions(cx + 55, searchY, 75, 20).build());
+					this.rebuildWidgets();
+				}).bounds(cx + 55, searchY, 75, 20).build());
 
 		this.rowStart = top + 52;
 		this.emptyY = this.rowStart + 6;
@@ -116,118 +116,118 @@ public class AccountManagerScreen extends Screen {
 			final Account acc = all.get(i);
 			int rowY = this.rowStart + (i - start) * 24;
 
-			this.addDrawableChild(ButtonWidget.builder(rowLabel(acc),
+			this.addRenderableWidget(Button.builder(rowLabel(acc),
 					b -> switchTo(acc)
-			).dimensions(cx - 130, rowY, 190, 20).build());
+			).bounds(cx - 130, rowY, 190, 20).build());
 
-			this.addDrawableChild(ButtonWidget.builder(Text.literal("E"),
+			this.addRenderableWidget(Button.builder(Component.literal("E"),
 					b -> {
-						assert this.client != null;
-						this.client.setScreen(new EditEntryScreen(acc));
-					}).dimensions(cx + 62, rowY, 28, 20).build());
+						assert this.minecraft != null;
+						this.minecraft.setScreen(new EditEntryScreen(acc));
+					}).bounds(cx + 62, rowY, 28, 20).build());
 
-			this.addDrawableChild(ButtonWidget.builder(
-					Text.literal("X").formatted(Formatting.RED),
+			this.addRenderableWidget(Button.builder(
+					Component.literal("X").withStyle(ChatFormatting.RED),
 					b -> {
 						SessionLogin.accountStore.remove(acc);
-						this.clearAndInit();
-					}).dimensions(cx + 92, rowY, 38, 20).build());
+						this.rebuildWidgets();
+					}).bounds(cx + 92, rowY, 38, 20).build());
 		}
 
 		int navY = rowStart + visibleRows * 24 + 6;
 
-		ButtonWidget prev = ButtonWidget.builder(Text.literal("< Prev"), b -> {
+		Button prev = Button.builder(Component.literal("< Prev"), b -> {
 			page--;
-			this.clearAndInit();
-		}).dimensions(cx - 130, navY, 60, 20).build();
+			this.rebuildWidgets();
+		}).bounds(cx - 130, navY, 60, 20).build();
 		prev.active = page > 0;
-		this.addDrawableChild(prev);
+		this.addRenderableWidget(prev);
 
-		ButtonWidget next = ButtonWidget.builder(Text.literal("Next >"), b -> {
+		Button next = Button.builder(Component.literal("Next >"), b -> {
 			page++;
-			this.clearAndInit();
-		}).dimensions(cx - 65, navY, 60, 20).build();
+			this.rebuildWidgets();
+		}).bounds(cx - 65, navY, 60, 20).build();
 		next.active = page < maxPage;
-		this.addDrawableChild(next);
+		this.addRenderableWidget(next);
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Add by Token"), b -> {
-					assert this.client != null;
-					this.client.setScreen(new LoginScreen());
-				}).dimensions(cx + 5, navY, 125, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Add by Token"), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new LoginScreen());
+				}).bounds(cx + 5, navY, 125, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Save Current"), b -> {
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Save Current"), b -> {
 					try {
 						var s = SessionLogin.currentSession;
-						Account a = new Account(s.getUsername(), s.getUsername(),
-								String.valueOf(s.getUuidOrNull()),
+						Account a = new Account(s.getName(), s.getName(),
+								String.valueOf(s.getProfileId()),
 								s.getAccessToken());
 						a.touch();
 						SessionLogin.accountStore.add(a);
-						status = ok("Saved " + s.getUsername());
-						this.clearAndInit();
+						status = ok("Saved " + s.getName());
+						this.rebuildWidgets();
 					} catch (Exception e) {
 						status = bad("Could not save session");
 					}
-				}).dimensions(cx - 130, navY + 24, 85, 20).build());
+				}).bounds(cx - 130, navY + 24, 85, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Bulk Import"), b -> {
-					assert this.client != null;
-					this.client.setScreen(new BulkImportScreen());
-				}).dimensions(cx - 43, navY + 24, 85, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Bulk Import"), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new BulkImportScreen());
+				}).bounds(cx - 43, navY + 24, 85, 20).build());
 
-		ButtonWidget restore = ButtonWidget.builder(
-				Text.literal("Use Original"), b -> {
+		Button restore = Button.builder(
+				Component.literal("Use Original"), b -> {
 					SessionUtils.restoreSession();
 					status = ok("Restored original session");
-				}).dimensions(cx + 44, navY + 24, 86, 20).build();
+				}).bounds(cx + 44, navY + 24, 86, 20).build();
 		restore.active = !SessionUtils.isOriginalActive();
-		this.addDrawableChild(restore);
+		this.addRenderableWidget(restore);
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Edit Account"), b -> {
-					assert this.client != null;
-					this.client.setScreen(new EditAccountScreen());
-				}).dimensions(cx - 130, navY + 48, 85, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Edit Account"), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new EditAccountScreen());
+				}).bounds(cx - 130, navY + 48, 85, 20).build());
 
 		String vaultLbl = SessionLogin.vault.isPasswordMode()
 				? "Vault: PW" : "Vault: Local";
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal(vaultLbl), b -> {
-					assert this.client != null;
-					this.client.setScreen(new SetPasswordScreen());
-				}).dimensions(cx - 43, navY + 48, 85, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal(vaultLbl), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new SetPasswordScreen());
+				}).bounds(cx - 43, navY + 48, 85, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Settings"), b -> {
-					assert this.client != null;
-					this.client.setScreen(new SettingsScreen(this));
-				}).dimensions(cx + 44, navY + 48, 86, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Settings"), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new SettingsScreen(this));
+				}).bounds(cx + 44, navY + 48, 86, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Add Offline"), b -> {
-					assert this.client != null;
-					this.client.setScreen(new AddOfflineAccountScreen());
-				}).dimensions(cx - 130, navY + 72, 85, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Add Offline"), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new AddOfflineAccountScreen());
+				}).bounds(cx - 130, navY + 72, 85, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Import"), b -> {
-					assert this.client != null;
-					this.client.setScreen(new ImportExportScreen(true));
-				}).dimensions(cx - 43, navY + 72, 85, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Import"), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new ImportExportScreen(true));
+				}).bounds(cx - 43, navY + 72, 85, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(
-				Text.literal("Export"), b -> {
-					assert this.client != null;
-					this.client.setScreen(new ImportExportScreen(false));
-				}).dimensions(cx + 44, navY + 72, 86, 20).build());
+		this.addRenderableWidget(Button.builder(
+				Component.literal("Export"), b -> {
+					assert this.minecraft != null;
+					this.minecraft.setScreen(new ImportExportScreen(false));
+				}).bounds(cx + 44, navY + 72, 86, 20).build());
 
-		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), b -> {
-			assert this.client != null;
-			this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
-		}).dimensions(cx - 100, navY + 96, 200, 20).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Back"), b -> {
+			assert this.minecraft != null;
+			this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+		}).bounds(cx - 100, navY + 96, 200, 20).build());
 	}
 
 	private List<Account> filteredSorted() {
@@ -252,24 +252,24 @@ public class AccountManagerScreen extends Screen {
 		return list;
 	}
 
-	private Text rowLabel(Account acc) {
-		// Leading spaces reserve room for the 16x16 head overlay drawn in render().
+	private Component rowLabel(Account acc) {
+		// Leading spaces reserve room for the 16x16 avatar drawn in the extract pass.
 		String pad = "    ";
 		if (acc.isOffline()) {
-			return Text.literal(pad + acc.label() + "  ")
-					.append(Text.literal("[offline]").formatted(Formatting.DARK_GRAY));
+			return Component.literal(pad + acc.label() + "  ")
+					.append(Component.literal("[offline]").withStyle(ChatFormatting.DARK_GRAY));
 		}
 		String exp = acc.hasToken() ? TokenUtils.expiryLabel(acc.token())
 				: "locked";
 		Boolean valid = acc.hasToken() ? VALIDITY.get(acc.token()) : null;
 		String mark = valid == null ? "?" : (valid ? "OK" : "X");
-		Formatting c = valid == null ? Formatting.GRAY
-				: (valid ? Formatting.GREEN : Formatting.RED);
-		return Text.literal(pad + acc.label() + "  ")
-				.append(Text.literal("[" + exp + "]")
-						.formatted(TokenUtils.isExpired(acc.token())
-								? Formatting.RED : Formatting.DARK_GRAY))
-				.append(Text.literal(" " + mark).formatted(c));
+		ChatFormatting c = valid == null ? ChatFormatting.GRAY
+				: (valid ? ChatFormatting.GREEN : ChatFormatting.RED);
+		return Component.literal(pad + acc.label() + "  ")
+				.append(Component.literal("[" + exp + "]")
+						.withStyle(TokenUtils.isExpired(acc.token())
+								? ChatFormatting.RED : ChatFormatting.DARK_GRAY))
+				.append(Component.literal(" " + mark).withStyle(c));
 	}
 
 	private void startValidation(List<Account> list) {
@@ -311,9 +311,9 @@ public class AccountManagerScreen extends Screen {
 			acc.touch();
 			SessionLogin.accountStore.save();
 			if (TokenUtils.isExpired(acc.token())) {
-				status = surroundWithObfuscated(Text.literal(
+				status = surroundWithObfuscated(Component.literal(
 						"Switched (token expired!)")
-						.formatted(Formatting.YELLOW), 3);
+						.withStyle(ChatFormatting.YELLOW), 3);
 			} else {
 				status = ok("Switched to " + acc.username());
 			}
@@ -323,73 +323,49 @@ public class AccountManagerScreen extends Screen {
 		}
 	}
 
-	private void drawHeads(DrawContext context) {
+	/**
+	 * Row avatars. On 26.x {@link dev.elv1n200.sessionlogin.util.SkinCache}
+	 * doesn't upload head textures (the texture pipeline changed), so every row
+	 * gets the neutral placeholder square that keeps the label alignment.
+	 */
+	private void drawHeads(GuiGraphicsExtractor extractor) {
 		if (visibleAccounts.isEmpty()) {
 			return;
 		}
 		int cx = this.width / 2;
 		int x = cx - 128;
 		for (int i = 0; i < visibleAccounts.size(); i++) {
-			Account a = visibleAccounts.get(i);
 			int y = rowStart + i * 24 + 2;
-			net.minecraft.util.Identifier head =
-					dev.elv1n200.sessionlogin.util.SkinCache.head(a.uuid());
-			if (head != null) {
-				context.drawTexture(
-						net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
-						head, x, y, 0f, 0f, 16, 16, 16, 16);
-			} else {
-				// Fallback square so the alignment is obvious before the head loads.
-				context.fill(x, y, x + 16, y + 16, 0x66202020);
-			}
+			extractor.fill(x, y, x + 16, y + 16, 0x66202020);
 		}
 	}
 
-	private static Text ok(String m) {
+	private static Component ok(String m) {
 		return surroundWithObfuscated(
-				Text.literal(m).formatted(Formatting.GREEN), 4);
+				Component.literal(m).withStyle(ChatFormatting.GREEN), 4);
 	}
 
-	private static Text bad(String m) {
+	private static Component bad(String m) {
 		return surroundWithObfuscated(
-				Text.literal(m).formatted(Formatting.RED), 4);
+				Component.literal(m).withStyle(ChatFormatting.RED), 4);
 	}
 
 	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		super.render(context, mouseX, mouseY, delta);
-		drawHeads(context);
-		context.drawCenteredTextWithShadow(this.textRenderer,
-				surroundWithObfuscated(Text.literal("Account Manager")
-						.formatted(Formatting.AQUA), 4),
+	public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(extractor, mouseX, mouseY, delta);
+		drawHeads(extractor);
+		extractor.centeredText(this.font,
+				surroundWithObfuscated(Component.literal("Account Manager")
+						.withStyle(ChatFormatting.AQUA), 4),
 				this.width / 2, this.titleY, 0xFFFFFF);
-		context.drawCenteredTextWithShadow(this.textRenderer, this.status,
+		extractor.centeredText(this.font, this.status,
 				this.width / 2, this.statusY, 0xFFFFFF);
-		if (!SessionLogin.accountStore.isLocked()) {
-			searchField.render(context, mouseX, mouseY, delta);
-			if (filteredSorted().isEmpty()) {
-				context.drawCenteredTextWithShadow(this.textRenderer,
-						Text.literal(query.isEmpty()
-								? "No saved accounts yet" : "No matches")
-								.formatted(Formatting.GRAY),
-						this.width / 2, this.emptyY, 0xFFFFFF);
-			}
+		if (!SessionLogin.accountStore.isLocked() && filteredSorted().isEmpty()) {
+			extractor.centeredText(this.font,
+					Component.literal(query.isEmpty()
+							? "No saved accounts yet" : "No matches")
+							.withStyle(ChatFormatting.GRAY),
+					this.width / 2, this.emptyY, 0xFFFFFF);
 		}
-	}
-
-	@Override
-	public boolean keyPressed(net.minecraft.client.input.KeyInput input) {
-		if (searchField != null && searchField.keyPressed(input)) {
-			return true;
-		}
-		return super.keyPressed(input);
-	}
-
-	@Override
-	public boolean charTyped(net.minecraft.client.input.CharInput input) {
-		if (searchField != null && searchField.charTyped(input)) {
-			return true;
-		}
-		return super.charTyped(input);
 	}
 }

@@ -8,8 +8,7 @@ import dev.elv1n200.sessionlogin.vault.VaultManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.session.Session;
+import net.minecraft.client.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,10 +19,10 @@ public class SessionLogin implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	/** The real session Minecraft started with. Never modified. */
-	public static Session originalSession;
+	public static User originalSession;
 
 	/** The session currently exposed to the game (may be swapped). */
-	public static Session currentSession;
+	public static User currentSession;
 
 	/** When false, the mixin returns the vanilla session untouched. */
 	public static boolean overrideSession = false;

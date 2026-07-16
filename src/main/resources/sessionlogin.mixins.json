@@ -1,11 +1,10 @@
 {
 	"required": true,
 	"package": "dev.elv1n200.sessionlogin.mixin",
-	"compatibilityLevel": "JAVA_21",
+	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"MultiplayerScreenMixin",
 		"MinecraftClientMixin",
-		"DownloaderMixin",
 		"ClientBrandRetrieverMixin",
 		"TelemetryManagerMixin"
 	],
