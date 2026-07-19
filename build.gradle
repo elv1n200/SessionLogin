@@ -8,6 +8,13 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
+// Put the Minecraft version in the jar name so a launcher can tell 26.x builds
+// apart from other-version builds by filename (matches the title-screen mod's
+// `<id>-<mc>-<version>.jar` convention).
+base {
+	archivesName = "sessionlogin-${project.minecraft_version}"
+}
+
 repositories {
 	maven {
 		name = 'Terraformers'
