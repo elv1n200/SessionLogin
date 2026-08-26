@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/main/resources/assets/sessionlogin/icon.png" width="140" alt="SessionLogin">
+//<img src="src/main/resources/assets/sessionlogin/icon.png" width="140" alt="SessionLogin">
 
 # SessionLogin
 
